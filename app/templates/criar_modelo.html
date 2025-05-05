@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Criar Modelo{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Criar Modelo de Processo</h2>
+
+    <form id="modelo-form">
+        <div class="mb-3">
+            <input type="text" id="modelo-nome" class="form-control" placeholder="Nome do modelo" required />
+        </div>
+
+        <div class="mb-3">
+            <input type="text" id="tarefa-nome" class="form-control" placeholder="Nome da tarefa" required />
+            <button type="button" class="btn btn-secondary mt-2" onclick="adicionarTarefa()">Adicionar tarefa</button>
+        </div>
+
+        <div id="tarefas-container" class="mb-3">
+            <ul class="list-group"></ul>
+        </div>
+
+        <button type="submit" class="btn btn-success">Criar modelo</button>
+    </form>
+
+    <div id="mensagem-modelo" class="mt-3 text-success"></div>
+</div>
+
+<script>
+    const tarefas = [];
+
+    function adicionarTarefa() {
+        const nomeInput = document.getElementById("tarefa-nome");
+        const nome = nomeInput.value.trim();
+        if (nome) {
+            tarefas.push({ name: nome });
+            nomeInput.value = "";
+            renderizarTarefas();
+        }
+    }
+
+    function renderizarTarefas() {
+        const container = document.getElementById("tarefas-container").querySelector("ul");
+        container.innerHTML = "";
+        tarefas.forEach((t, i) => {
+            const item = document.createElement("li");
+            item.className = "list-group-item";
+            item.textContent = `${i + 1}. ${t.name}`;
+            container.appendChild(item);
+        });
+    }
+
+    document.getElementById("modelo-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById("modelo-nome").value;
+        const res = await fetch("/process/models", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ name: nome, tasks: tarefas })
+        });
+        const data = await res.json();
+        const msg = document.getElementById("mensagem-modelo");
+        msg.textContent = data.message || data.error;
+
+        if (res.ok) {
+            tarefas.length = 0;
+            renderizarTarefas();
+            document.getElementById("modelo-nome").value = "";
+        }
+    });
+</script>
+{% endblock %}

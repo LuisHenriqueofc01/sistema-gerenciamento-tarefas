@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar Processo{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Iniciar Novo Processo</h2>
+
+    <form id="processo-form">
+        <div class="mb-3">
+            <label for="modelo">Escolha um modelo:</label>
+            <select id="modelo" class="form-select" required>
+                <option value="" disabled selected>Selecione um modelo...</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <input id="nome-processo" class="form-control" placeholder="Nome do processo" required />
+        </div>
+        <button type="submit" class="btn btn-success">Iniciar</button>
+    </form>
+
+    <div id="mensagem-processo" class="mt-3 text-success"></div>
+</div>
+
+<script>
+    async function carregarModelos() {
+        try {
+            const res = await fetch("/process/models/list", { credentials: "include" });
+            const modelos = await res.json();
+            const select = document.getElementById("modelo");
+            select.innerHTML = `<option value="" disabled selected>Selecione um modelo...</option>`;
+            modelos.forEach(modelo => {
+                const opt = document.createElement("option");
+                opt.value = modelo.id;
+                opt.textContent = modelo.name;
+                select.appendChild(opt);
+            });
+        } catch (err) {
+            document.getElementById("mensagem-processo").textContent = "Erro ao carregar modelos.";
+        }
+    }
+
+    document.getElementById("processo-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const model_id = document.getElementById("modelo").value;
+        const name = document.getElementById("nome-processo").value.trim();
+
+        if (!model_id || !name) {
+            return alert("Preencha todos os campos.");
+        }
+
+        const res = await fetch("/process/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ model_id, name })
+        });
+
+        const data = await res.json();
+        const msg = document.getElementById("mensagem-processo");
+        msg.textContent = data.message || data.error;
+        msg.className = res.ok ? "mt-3 text-success" : "mt-3 text-danger";
+
+        if (res.ok) {
+            document.getElementById("nome-processo").value = "";
+        }
+    });
+
+    carregarModelos();
+</script>
+{% endblock %}

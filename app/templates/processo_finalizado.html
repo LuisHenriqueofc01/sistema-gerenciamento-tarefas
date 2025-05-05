@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Processo Finalizado{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    <div class="alert alert-success">
+        <h2 class="mb-3">✅ Processo Finalizado com Sucesso!</h2>
+        <p>O fluxo de tarefas foi concluído e arquivado no sistema.</p>
+    </div>
+
+    <a href="/kanban" class="btn btn-outline-primary mt-3">
+        🔙 Voltar para o Kanban
+    </a>
+</div>
+{% endblock %}

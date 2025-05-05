@@ -168,3 +168,39 @@ def resumo_tarefas():
         contagem.setdefault(status_padrao, 0)
 
     return jsonify(contagem)
+
+
+from app.utils.algoritmos import ListaEncadeadaSimples, busca_linear, bubble_sort
+
+@process_bp.route("/<int:process_id>/algoritmos", methods=["GET"])
+@login_required
+def demonstrar_algoritmos(process_id):
+    tarefas = Task.query.filter_by(process_id=process_id).all()
+    if not tarefas:
+        return jsonify({"error": "Nenhuma tarefa encontrada para esse processo"}), 404
+
+    # Lista Encadeada
+    lista = ListaEncadeadaSimples()
+    for t in tarefas:
+        lista.inserir(t)
+    encadeada = [t.name for t in lista.listar()]
+
+    # Bubble Sort por nome
+    ordenadas = bubble_sort(tarefas[:], chave=lambda x: x.name)
+    ordenadas_nome = [t.name for t in ordenadas]
+
+    # Busca Linear (exemplo com o nome da primeira tarefa)
+    buscada = busca_linear(tarefas, tarefas[0].name)
+    encontrada = buscada.name if buscada else "Não encontrada"
+
+    return jsonify({
+        "lista_encadeada": encadeada,
+        "ordenadas_por_nome": ordenadas_nome,
+        "busca_linear_por_nome": encontrada
+    })
+
+@process_bp.route("/models/list", methods=["GET"])
+@login_required
+def listar_modelos():
+    modelos = ProcessModel.query.all()
+    return jsonify([{"id": m.id, "name": m.name} for m in modelos])

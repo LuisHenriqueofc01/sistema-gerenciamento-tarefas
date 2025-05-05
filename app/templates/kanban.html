@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Painel Kanban{% endblock %}
+
+{% block content %}
+<style>
+    .kanban-board {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .kanban-column {
+        flex: 1;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        background-color: #f9f9f9;
+        min-height: 300px;
+        transition: background-color 0.3s ease;
+    }
+
+    .kanban-column h5 {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .kanban-column.drag-over {
+        background-color: #e2e6ea;
+    }
+
+    .task-card {
+        border-left: 6px solid transparent;
+        border-radius: 5px;
+        padding: 8px 8px 8px 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        cursor: grab;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .task-card.pendente {
+        background-color: #f1f1f1;
+        border-left-color: #888;
+    }
+
+    .task-card.em_progresso {
+        background-color: #fff3cd;
+        border-left-color: #ffc107;
+    }
+
+    .task-card.concluída {
+        background-color: #d4edda;
+        border-left-color: #28a745;
+    }
+</style>
+
+<h2 class="mb-4">Painel de Tarefas - Kanban</h2>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="toast-status" class="toast align-items-center text-white bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="toast-body">Ação realizada!</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<div class="mb-3">
+    <input id="process-id" class="form-control mb-2" placeholder="ID do processo" />
+
+    <div class="mb-2">
+        <label for="filtro-tarefas" class="form-label">Exibir:</label>
+        <select id="filtro-tarefas" class="form-select">
+            <option value="minhas">Minhas tarefas</option>
+            <option value="todas">Todas as tarefas</option>
+        </select>
+    </div>
+
+    <button class="btn btn-primary mt-2" onclick="carregarTarefas()">Carregar</button>
+</div>
+
+<div class="kanban-board">
+    <div class="kanban-column" id="pendente">
+        <h5>🕒 Pendente</h5>
+    </div>
+    <div class="kanban-column" id="em_progresso">
+        <h5>🔄 Em Progresso</h5>
+    </div>
+    <div class="kanban-column" id="concluída">
+        <h5>✅ Concluída</h5>
+    </div>
+</div>
+
+<script>
+    const usuarioLogado = "{{ current_user.name }}";
+
+    const icones = {
+        pendente: "⏳",
+        em_progresso: "🔄",
+        concluída: "✅"
+    };
+
+    function mostrarToast(msg, tipo = "success") {
+        const toastEl = document.getElementById("toast-status");
+        const toastBody = document.getElementById("toast-body");
+        toastBody.textContent = msg;
+        toastEl.className = `toast align-items-center text-white bg-${tipo} border-0`;
+        const bsToast = new bootstrap.Toast(toastEl);
+        bsToast.show();
+    }
+
+    async function carregarTarefas() {
+        const processId = document.getElementById("process-id").value;
+        const filtro = document.getElementById("filtro-tarefas").value;
+
+        if (!processId) return mostrarToast("Digite um ID de processo!", "danger");
+
+        const res = await fetch(`/process/${processId}/tasks`, { credentials: "include" });
+        const tarefas = await res.json();
+
+        ["pendente", "em_progresso", "concluída"].forEach(status => {
+            const coluna = document.getElementById(status);
+            const titulo = coluna.querySelector("h5").textContent;
+            coluna.innerHTML = `<h5>${titulo}</h5>`;
+
+            // Drag events
+            coluna.addEventListener("dragover", e => {
+                e.preventDefault();
+                coluna.classList.add("drag-over");
+            });
+
+            coluna.addEventListener("dragleave", () => {
+                coluna.classList.remove("drag-over");
+            });
+
+            coluna.addEventListener("drop", async e => {
+                e.preventDefault();
+                coluna.classList.remove("drag-over");
+
+                const taskId = e.dataTransfer.getData("text/plain");
+                const novoStatus = coluna.id;
+
+                const resposta = await fetch(`/process/task/${taskId}/status`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ status: novoStatus })
+                });
+
+                const resultado = await resposta.json();
+                mostrarToast(resultado.message || resultado.error, resultado.error ? "danger" : "success");
+                carregarTarefas();
+            });
+        });
+
+        tarefas
+            .filter(t => filtro === "todas" || t.assignee === usuarioLogado)
+            .forEach(t => {
+                const div = document.createElement("div");
+                div.className = `task-card ${t.status}`;
+                div.setAttribute("draggable", "true");
+                div.dataset.taskId = t.id;
+
+                const podeConcluir = t.status === "em_progresso" && t.assignee === usuarioLogado;
+
+                div.innerHTML = `
+                    <strong>${icones[t.status] || ""} ${t.name}</strong><br>
+                    Status: ${t.status}<br>
+                    Responsável: ${t.assignee || "Ninguém"}<br>
+                    ${podeConcluir ? `<button class="btn btn-sm btn-success mt-1" onclick="concluirTarefa(${t.id})">Concluir</button>` : ""}
+                `;
+
+                div.addEventListener("dragstart", e => {
+                    e.dataTransfer.setData("text/plain", t.id);
+                });
+
+                document.getElementById(t.status).appendChild(div);
+            });
+    }
+
+    async function concluirTarefa(taskId) {
+        const confirmar = confirm("Tem certeza que deseja concluir esta tarefa?");
+        if (!confirmar) return;
+
+        const res = await fetch(`/process/task/${taskId}/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ status: "concluída" })
+        });
+
+        const data = await res.json();
+        mostrarToast(data.message || data.error, data.error ? "danger" : "success");
+        carregarTarefas();
+    }
+</script>
+{% endblock %}

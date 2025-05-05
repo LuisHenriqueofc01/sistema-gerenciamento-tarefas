@@ -20,8 +20,10 @@ def create_app():
 
     from .routes.auth import auth_bp
     from .routes.process import process_bp
+    from .routes.views import views_bp  # <-- agora está no lugar certo
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(process_bp)
+    app.register_blueprint(views_bp)
 
     return app

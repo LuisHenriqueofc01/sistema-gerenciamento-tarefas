@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+</head>
+
+<body class="container mt-4">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Gerenciador</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="menuNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/kanban">Kanban</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/criar-modelo">Criar Modelo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/iniciar-processo">Iniciar Processo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/revisao-processo">Revisão Final</a></li>
+                </ul>
+                <span class="navbar-text text-white me-3">
+                    {{ current_user.name }}
+                </span>
+                <a class="btn btn-outline-light btn-sm" href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+</body>
+
+</html>

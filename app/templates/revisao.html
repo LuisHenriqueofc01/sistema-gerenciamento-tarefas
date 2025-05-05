@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Revisão Final{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Revisão Final do Processo</h2>
+
+<div class="mb-3">
+    <input id="process-id" class="form-control" placeholder="ID do processo">
+    <button class="btn btn-primary mt-2" onclick="carregarRevisao()">Ver Tarefas</button>
+</div>
+
+<div id="tabela-tarefas"></div>
+
+<div id="finalizar-box" class="mt-4" style="display: none;">
+    <button class="btn btn-success" onclick="finalizarProcesso()">Finalizar Processo</button>
+</div>
+
+<script>
+    async function carregarRevisao() {
+        const id = document.getElementById("process-id").value;
+        if (!id) return alert("Digite um ID!");
+
+        const res = await fetch(`/process/${id}/tasks`, { credentials: "include" });
+        const tarefas = await res.json();
+
+        let html = `
+            <table class="table table-bordered table-hover mt-3">
+                <thead class="table-light">
+                    <tr><th>Tarefa</th><th>Responsável</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+        `;
+
+        let todasConcluidas = true;
+
+        tarefas.forEach(t => {
+            html += `
+                <tr>
+                    <td>${t.name}</td>
+                    <td>${t.assignee || "Ninguém"}</td>
+                    <td>${t.status}</td>
+                </tr>
+            `;
+
+            if (!["concluída", "validada"].includes(t.status)) {
+                todasConcluidas = false;
+            }
+        });
+
+        html += "</tbody></table>";
+        document.getElementById("tabela-tarefas").innerHTML = html;
+        document.getElementById("finalizar-box").style.display = todasConcluidas ? "block" : "none";
+    }
+
+    async function finalizarProcesso() {
+        const id = document.getElementById("process-id").value;
+        const confirmar = confirm("Tem certeza que deseja finalizar o processo?");
+        if (!confirmar) return;
+
+        const res = await fetch(`/process/${id}/finalizar`, {
+            method: "POST",
+            credentials: "include"
+        });
+
+        const data = await res.json();
+        alert(data.message || data.error);
+
+        if (data.message) {
+            location.href = `/processo-finalizado/${id}`;
+        }
+    }
+</script>
+{% endblock %}
