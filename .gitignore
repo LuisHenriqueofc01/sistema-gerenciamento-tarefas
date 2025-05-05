@@ -1,0 +1,18 @@
+# Bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# SQLite database
+*.sqlite3
+
+# Virtual environment
+venv/
+env/
+
+# Editor e sistema
+.vscode/
+*.log
+.DS_Store
+*.swp
+Thumbs.db
