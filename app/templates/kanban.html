@@ -68,7 +68,6 @@
 
 <div class="mb-3">
     <input id="process-id" class="form-control mb-2" placeholder="ID do processo" />
-
     <div class="mb-2">
         <label for="filtro-tarefas" class="form-label">Exibir:</label>
         <select id="filtro-tarefas" class="form-select">
@@ -76,19 +75,42 @@
             <option value="todas">Todas as tarefas</option>
         </select>
     </div>
-
     <button class="btn btn-primary mt-2" onclick="carregarTarefas()">Carregar</button>
 </div>
 
 <div class="kanban-board">
     <div class="kanban-column" id="pendente">
         <h5>🕒 Pendente</h5>
+        {% for tarefa in tarefas if tarefa.status == 'pendente' %}
+        <div class="task-card pendente" draggable="true" data-task-id="{{ tarefa.id }}">
+            <strong>⏳ {{ tarefa.title }}</strong><br>
+            Status: {{ tarefa.status }}<br>
+            Responsável: {{ tarefa.assigned_user.name if tarefa.assigned_user else "Ninguém" }}
+        </div>
+        {% endfor %}
     </div>
     <div class="kanban-column" id="em_progresso">
         <h5>🔄 Em Progresso</h5>
+        {% for tarefa in tarefas if tarefa.status == 'em_progresso' %}
+        <div class="task-card em_progresso" draggable="true" data-task-id="{{ tarefa.id }}">
+            <strong>🔄 {{ tarefa.title }}</strong><br>
+            Status: {{ tarefa.status }}<br>
+            Responsável: {{ tarefa.assigned_user.name if tarefa.assigned_user else "Ninguém" }}<br>
+            {% if tarefa.assigned_user and tarefa.assigned_user.id == usuario.id %}
+            <button class="btn btn-sm btn-success mt-1" onclick="concluirTarefa({{ tarefa.id }})">Concluir</button>
+            {% endif %}
+        </div>
+        {% endfor %}
     </div>
     <div class="kanban-column" id="concluída">
         <h5>✅ Concluída</h5>
+        {% for tarefa in tarefas if tarefa.status == 'concluída' %}
+        <div class="task-card concluída" draggable="true" data-task-id="{{ tarefa.id }}">
+            <strong>✅ {{ tarefa.title }}</strong><br>
+            Status: {{ tarefa.status }}<br>
+            Responsável: {{ tarefa.assigned_user.name if tarefa.assigned_user else "Ninguém" }}
+        </div>
+        {% endfor %}
     </div>
 </div>
 
@@ -124,7 +146,6 @@
             const titulo = coluna.querySelector("h5").textContent;
             coluna.innerHTML = `<h5>${titulo}</h5>`;
 
-            // Drag events
             coluna.addEventListener("dragover", e => {
                 e.preventDefault();
                 coluna.classList.add("drag-over");
@@ -167,7 +188,8 @@
                 div.innerHTML = `
                     <strong>${icones[t.status] || ""} ${t.name}</strong><br>
                     Status: ${t.status}<br>
-                    Responsável: ${t.assignee || "Ninguém"}<br>
+                   Responsável: ${t.assignee === usuarioLogado ? "Você" : (t.assignee || "Ninguém")}<br>
+
                     ${podeConcluir ? `<button class="btn btn-sm btn-success mt-1" onclick="concluirTarefa(${t.id})">Concluir</button>` : ""}
                 `;
 

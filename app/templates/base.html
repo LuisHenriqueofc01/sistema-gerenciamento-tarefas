@@ -16,17 +16,33 @@
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="menuNav">
                 <ul class="navbar-nav me-auto">
+
+                    {% if current_user.is_authenticated %}
                     <li class="nav-item"><a class="nav-link" href="/kanban">Kanban</a></li>
                     <li class="nav-item"><a class="nav-link" href="/criar-modelo">Criar Modelo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/iniciar-processo">Iniciar Processo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/revisao-processo">Revisão Final</a></li>
+
+                    {% if current_user.is_admin %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('views.admin_panel') }}">Admin</a></li>
+                    {% endif %}
+                    {% endif %}
+
                 </ul>
+
+                {% if current_user.is_authenticated %}
                 <span class="navbar-text text-white me-3">
                     {{ current_user.name }}
                 </span>
-                <a class="btn btn-outline-light btn-sm" href="/logout">Logout</a>
+                <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Logout</a>
+
+
+                {% else %}
+                <a class="btn btn-outline-light btn-sm" href="{{ url_for('views.login_page') }}">Login</a>
+                {% endif %}
             </div>
         </div>
     </nav>

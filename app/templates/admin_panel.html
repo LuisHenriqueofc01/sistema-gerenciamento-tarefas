@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<h2 class="mb-4">Painel do Administrador</h2>
+
+<!-- Criar Novo Usuário -->
+<div class="bg-light p-4 rounded shadow-sm mb-4">
+    <h4>Criar Novo Usuário</h4>
+    <form action="{{ url_for('views.create_user') }}" method="POST" class="row g-3">
+        <div class="col-md-3">
+            <input type="text" name="username" class="form-control" placeholder="Usuário" required>
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="name" class="form-control" placeholder="Nome completo" required>
+        </div>
+        <div class="col-md-3">
+            <input type="email" name="email" class="form-control" placeholder="Email" required>
+        </div>
+        <div class="col-md-3">
+            <input type="password" name="password" class="form-control" placeholder="Senha" required>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Criar</button>
+        </div>
+    </form>
+</div>
+
+<!-- Lista de Administradores -->
+<div class="mb-4">
+    <h4>Administradores</h4>
+    {% for user in users if user.is_admin %}
+    <div class="d-flex justify-content-between align-items-center bg-info bg-opacity-25 p-3 rounded mb-2">
+        <span>{{ user.username }} - {{ user.name }} (admin)</span>
+        <form action="{{ url_for('views.delete_user', user_id=user.id) }}" method="POST">
+            <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Lista de Usuários Comuns -->
+<div class="mb-4">
+    <h4>Usuários Comuns</h4>
+    {% for user in users if not user.is_admin %}
+    <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-2">
+        <span>{{ user.username }} - {{ user.name }}</span>
+        <div class="d-flex gap-2">
+            <form action="{{ url_for('views.delete_user', user_id=user.id) }}" method="POST">
+                <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+            </form>
+            <form action="{{ url_for('views.promote_user', user_id=user.id) }}" method="POST">
+                <button type="submit" class="btn btn-success btn-sm">Tornar Admin</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Criar Tarefa -->
+<div class="bg-light p-4 rounded shadow-sm mb-4">
+    <h4>Criar Tarefa para Usuário</h4>
+    <form action="{{ url_for('views.create_task') }}" method="POST" class="row g-3">
+        <div class="col-md-4">
+            <input type="text" name="title" class="form-control" placeholder="Título" required>
+        </div>
+        <div class="col-md-4">
+            <input type="text" name="description" class="form-control" placeholder="Descrição" required>
+        </div>
+        <div class="col-md-4">
+            <select name="user_id" class="form-select" required>
+                <option value="" disabled selected>Selecione o usuário</option>
+                {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-info">Criar Tarefa</button>
+        </div>
+    </form>
+</div>
+
+<!-- Lista de Tarefas -->
+<div>
+    <h4>Lista de Tarefas</h4>
+    {% for task in tasks %}
+    <div class="d-flex justify-content-between align-items-center bg-warning bg-opacity-25 p-3 rounded mb-2">
+        <span>{{ task.title }} - {{ task.status }}
+            ({{ task.assignee.username if task.assignee else 'Sem usuário' }})
+        </span>
+        <form action="{{ url_for('views.update_task_status', task_id=task.id) }}" method="POST" class="d-flex gap-2">
+            <select name="status" class="form-select form-select-sm">
+                <option value="pendente" {% if task.status=='pendente' %}selected{% endif %}>Pendente</option>
+                <option value="em progresso" {% if task.status=='em progresso' %}selected{% endif %}>Em Progresso
+                </option>
+                <option value="concluída" {% if task.status=='concluída' %}selected{% endif %}>Concluída</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Atualizar</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
