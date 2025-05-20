@@ -1,9 +1,14 @@
 from flask import Blueprint, request, jsonify
-from flask_login import login_required
-from app.models.models import db, ProcessModel, TaskTemplate, ProcessInstance, Task
+from flask_login import login_required, current_user
+from app import db
+from app.models.models import ProcessModel, TaskTemplate, ProcessInstance, Task, User
+from datetime import datetime
+from sqlalchemy import func
+from app.utils.algoritmos import ListaEncadeadaSimples, busca_linear, bubble_sort
 
 process_bp = Blueprint("process", __name__, url_prefix="/process")
 
+# Criar Modelo
 @process_bp.route("/models", methods=["POST"])
 @login_required
 def create_model():
@@ -19,6 +24,7 @@ def create_model():
     db.session.commit()
     return jsonify({"message": "Modelo criado com sucesso", "model_id": model.id})
 
+# Iniciar Processo
 @process_bp.route("/start", methods=["POST"])
 @login_required
 def start_process():
@@ -27,13 +33,17 @@ def start_process():
     if not model:
         return jsonify({"error": "Modelo não encontrado"}), 404
 
-    instance = ProcessInstance(name=data.get("name", model.name), model_id=model.id)
+    instance = ProcessInstance(
+        name=data.get("name", model.name),
+        model_id=model.id,
+        responsavel_id=data.get("responsavel_id")
+    )
     db.session.add(instance)
     db.session.commit()
 
     for template in sorted(model.task_templates, key=lambda x: x.order):
         task = Task(
-            name=template.name,
+            title=template.name,
             order=template.order,
             process=instance,
             status="pendente"
@@ -43,18 +53,20 @@ def start_process():
     db.session.commit()
     return jsonify({"message": "Processo iniciado", "process_id": instance.id})
 
+# Listar Tarefas do Processo
 @process_bp.route("/<int:process_id>/tasks", methods=["GET"])
 @login_required
 def list_tasks(process_id):
     tasks = Task.query.filter_by(process_id=process_id).order_by(Task.order).all()
     return jsonify([{
         "id": t.id,
-        "name": t.name,
+        "title": t.title,
         "status": t.status,
         "order": t.order,
-        "assignee": t.assignee.name if t.assignee else None
+        "assignee": t.assigned_user_id
     } for t in tasks])
 
+# Atualizar status da tarefa
 @process_bp.route("/task/<int:task_id>/status", methods=["POST"])
 @login_required
 def update_task_status(task_id):
@@ -63,32 +75,24 @@ def update_task_status(task_id):
     if not task:
         return jsonify({"error": "Tarefa não encontrada"}), 404
 
-    # 🛡️ Verificação de segurança
     if task.assigned_user_id != current_user.id:
         return jsonify({"error": "Você não tem permissão para alterar esta tarefa"}), 403
 
     task.status = data.get("status", task.status)
 
     if task.status == "concluída":
-        from datetime import datetime
         task.end_date = datetime.utcnow()
-
-        # Desbloquear próxima tarefa
         next_task = Task.query.filter_by(
             process_id=task.process_id,
             order=task.order + 1
         ).first()
-
         if next_task and next_task.status == "pendente":
             next_task.status = "em_progresso"
 
     db.session.commit()
     return jsonify({"message": "Status da tarefa atualizado com sucesso"})
 
-
-
-from datetime import datetime
-
+# Finalizar Processo
 @process_bp.route("/<int:process_id>/finalizar", methods=["POST"])
 @login_required
 def finalizar_processo(process_id):
@@ -108,13 +112,12 @@ def finalizar_processo(process_id):
 
     return jsonify({"message": "Processo finalizado com sucesso"})
 
+# Atribuir tarefa
 @process_bp.route("/task/<int:task_id>/atribuir", methods=["POST"])
 @login_required
 def atribuir_usuario(task_id):
     data = request.json
     user_id = data.get("user_id")
-
-    from app.models.models import User
     task = Task.query.get(task_id)
     user = User.query.get(user_id)
 
@@ -126,17 +129,14 @@ def atribuir_usuario(task_id):
     task.assigned_user_id = user_id
     db.session.commit()
 
-    return jsonify({"message": f"Tarefa atribuída a {user.name}"})
+    return jsonify({"message": f"Tarefa atribuída a {user.name or user.username}"})
 
-from flask_login import current_user
-
+# Minhas tarefas
 @process_bp.route("/minhas-tarefas", methods=["GET"])
 @login_required
 def minhas_tarefas():
-    status_filtro = request.args.get("status")  # Ex: em_progresso, pendente, etc.
-
+    status_filtro = request.args.get("status")
     query = Task.query.filter_by(assigned_user_id=current_user.id)
-    
     if status_filtro:
         query = query.filter_by(status=status_filtro)
 
@@ -144,16 +144,16 @@ def minhas_tarefas():
 
     return jsonify([{
         "id": t.id,
-        "name": t.name,
+        "name": t.title,
         "status": t.status,
         "order": t.order,
         "process_id": t.process_id
     } for t in tarefas])
 
+# Resumo de tarefas por status
 @process_bp.route("/minhas-tarefas/resumo", methods=["GET"])
 @login_required
 def resumo_tarefas():
-    from sqlalchemy import func
     resultado = (
         db.session.query(Task.status, func.count(Task.id))
         .filter(Task.assigned_user_id == current_user.id)
@@ -162,16 +162,12 @@ def resumo_tarefas():
     )
 
     contagem = {status: total for status, total in resultado}
-
-    # Garante que todos os status apareçam, mesmo que zerados
     for status_padrao in ["pendente", "em_progresso", "concluída", "validada"]:
         contagem.setdefault(status_padrao, 0)
 
     return jsonify(contagem)
 
-
-from app.utils.algoritmos import ListaEncadeadaSimples, busca_linear, bubble_sort
-
+# Algoritmos (Bubble Sort, Busca Linear, Lista Encadeada)
 @process_bp.route("/<int:process_id>/algoritmos", methods=["GET"])
 @login_required
 def demonstrar_algoritmos(process_id):
@@ -179,19 +175,16 @@ def demonstrar_algoritmos(process_id):
     if not tarefas:
         return jsonify({"error": "Nenhuma tarefa encontrada para esse processo"}), 404
 
-    # Lista Encadeada
     lista = ListaEncadeadaSimples()
     for t in tarefas:
         lista.inserir(t)
-    encadeada = [t.name for t in lista.listar()]
+    encadeada = [t.title for t in lista.listar()]
 
-    # Bubble Sort por nome
-    ordenadas = bubble_sort(tarefas[:], chave=lambda x: x.name)
-    ordenadas_nome = [t.name for t in ordenadas]
+    ordenadas = bubble_sort(tarefas[:], chave=lambda x: x.title)
+    ordenadas_nome = [t.title for t in ordenadas]
 
-    # Busca Linear (exemplo com o nome da primeira tarefa)
-    buscada = busca_linear(tarefas, tarefas[0].name)
-    encontrada = buscada.name if buscada else "Não encontrada"
+    buscada = busca_linear(tarefas, tarefas[0].title)
+    encontrada = buscada.title if buscada else "Não encontrada"
 
     return jsonify({
         "lista_encadeada": encadeada,
@@ -199,8 +192,16 @@ def demonstrar_algoritmos(process_id):
         "busca_linear_por_nome": encontrada
     })
 
+# Listar modelos de processo
 @process_bp.route("/models/list", methods=["GET"])
 @login_required
 def listar_modelos():
     modelos = ProcessModel.query.all()
     return jsonify([{"id": m.id, "name": m.name} for m in modelos])
+
+# ✅ NOVA ROTA: Listar usuários (para selecionar o responsável)
+@process_bp.route("/users/list", methods=["GET"])
+@login_required
+def listar_usuarios():
+    usuarios = User.query.all()
+    return jsonify([{"id": u.id, "name": u.name or u.username} for u in usuarios])

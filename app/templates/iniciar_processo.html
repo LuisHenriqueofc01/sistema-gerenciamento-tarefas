@@ -13,9 +13,18 @@
                 <option value="" disabled selected>Selecione um modelo...</option>
             </select>
         </div>
+
         <div class="mb-3">
             <input id="nome-processo" class="form-control" placeholder="Nome do processo" required />
         </div>
+
+        <div class="mb-3">
+            <label for="responsavel">Responsável:</label>
+            <select id="responsavel" class="form-select" required>
+                <option value="" disabled selected>Selecione um responsável...</option>
+            </select>
+        </div>
+
         <button type="submit" class="btn btn-success">Iniciar</button>
     </form>
 
@@ -40,12 +49,30 @@
         }
     }
 
+    async function carregarUsuarios() {
+        try {
+            const res = await fetch("/process/users/list", { credentials: "include" });
+            const usuarios = await res.json();
+            const select = document.getElementById("responsavel");
+            select.innerHTML = `<option value="" disabled selected>Selecione um responsável...</option>`;
+            usuarios.forEach(user => {
+                const opt = document.createElement("option");
+                opt.value = user.id;
+                opt.textContent = user.name;
+                select.appendChild(opt);
+            });
+        } catch (err) {
+            document.getElementById("mensagem-processo").textContent = "Erro ao carregar usuários.";
+        }
+    }
+
     document.getElementById("processo-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const model_id = document.getElementById("modelo").value;
         const name = document.getElementById("nome-processo").value.trim();
+        const responsavel_id = document.getElementById("responsavel").value;
 
-        if (!model_id || !name) {
+        if (!model_id || !name || !responsavel_id) {
             return alert("Preencha todos os campos.");
         }
 
@@ -53,7 +80,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ model_id, name })
+            body: JSON.stringify({ model_id, name, responsavel_id })
         });
 
         const data = await res.json();
@@ -63,9 +90,12 @@
 
         if (res.ok) {
             document.getElementById("nome-processo").value = "";
+            document.getElementById("modelo").value = "";
+            document.getElementById("responsavel").value = "";
         }
     });
 
     carregarModelos();
+    carregarUsuarios();
 </script>
 {% endblock %}

@@ -1,28 +1,24 @@
 from datetime import datetime
 from flask_login import UserMixin
-from app import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
+from app import db, login_manager
 
 # --------------------- USUÁRIO ---------------------
-class User(db.Model, UserMixin):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)  # ← ADICIONE AQUI
-    name = db.Column(db.String(120), nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    name = db.Column(db.String(120))
+    password_hash = db.Column(db.String(128))
     is_admin = db.Column(db.Boolean, default=False)
-
-
-    tasks = db.relationship('Task', backref='assignee', lazy=True, foreign_keys='Task.assigned_user_id')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-
 
 
 @login_manager.user_loader
@@ -60,6 +56,9 @@ class ProcessInstance(db.Model):
     end_date = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
 
+    responsavel_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    responsavel = db.relationship('User', backref='processos_responsaveis')
+
     tasks = db.relationship('Task', backref='process', lazy=True, cascade="all, delete")
 
 
@@ -68,11 +67,11 @@ class Task(db.Model):
     __tablename__ = "tasks"
 
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)  # ← Novo campo
-    description = db.Column(db.Text)                   # ← Novo campo
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
     order = db.Column(db.Integer, nullable=False)
     process_id = db.Column(db.Integer, db.ForeignKey('process_instances.id'), nullable=False)
-    
+
     assigned_user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     start_date = db.Column(db.DateTime)
     end_date = db.Column(db.DateTime)
@@ -80,4 +79,3 @@ class Task(db.Model):
 
     def is_completed(self):
         return self.status in ["concluída", "validada"]
-
