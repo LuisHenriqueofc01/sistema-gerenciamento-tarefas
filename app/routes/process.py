@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models.models import ProcessModel, TaskTemplate, ProcessInstance, Task, User
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import func
 from app.utils.algoritmos import ListaEncadeadaSimples, busca_linear, bubble_sort
 
@@ -24,7 +24,7 @@ def create_model():
     db.session.commit()
     return jsonify({"message": "Modelo criado com sucesso", "model_id": model.id})
 
-# Iniciar Processo
+# Iniciar Processo com datas customizadas
 @process_bp.route("/start", methods=["POST"])
 @login_required
 def start_process():
@@ -33,20 +33,48 @@ def start_process():
     if not model:
         return jsonify({"error": "Modelo não encontrado"}), 404
 
+    # Pega data de entrega do processo (end_date) se informada
+    end_date_str = data.get("end_date")
+    if end_date_str:
+        try:
+            processo_end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        except ValueError:
+            processo_end_date = None
+    else:
+        processo_end_date = None
+
     instance = ProcessInstance(
         name=data.get("name", model.name),
         model_id=model.id,
-        responsavel_id=data.get("responsavel_id")
+        responsavel_id=data.get("responsavel_id"),
+        start_date=datetime.utcnow(),
+        end_date=processo_end_date
     )
     db.session.add(instance)
     db.session.commit()
 
-    for template in sorted(model.task_templates, key=lambda x: x.order):
+    # Lista opcional de datas de entrega para tarefas
+    tarefas_end_dates = data.get("tarefas_end_dates", [])  # Ex: ["2025-06-05", "2025-06-10", ...]
+
+    for i, template in enumerate(sorted(model.task_templates, key=lambda x: x.order)):
+        tarefa_end_date = None
+        if i < len(tarefas_end_dates):
+            try:
+                tarefa_end_date = datetime.strptime(tarefas_end_dates[i], "%Y-%m-%d")
+            except ValueError:
+                tarefa_end_date = None
+
+        if not tarefa_end_date:
+            tarefa_end_date = datetime.utcnow() + timedelta(days=7)  # Padrão 7 dias
+
         task = Task(
             title=template.name,
             order=template.order,
             process=instance,
-            status="pendente"
+            status="pendente",
+            assigned_user_id=instance.responsavel_id,
+            start_date=datetime.utcnow(),
+            end_date=tarefa_end_date
         )
         db.session.add(task)
 
@@ -63,7 +91,7 @@ def list_tasks(process_id):
         "title": t.title,
         "status": t.status,
         "order": t.order,
-        "assignee": t.assigned_user_id
+        "assignee": t.assigned_user.name if t.assigned_user else None
     } for t in tasks])
 
 # Atualizar status da tarefa
@@ -81,7 +109,7 @@ def update_task_status(task_id):
     task.status = data.get("status", task.status)
 
     if task.status == "concluída":
-        task.end_date = datetime.utcnow()
+        task.end_date = datetime.utcnow()  # Marca data de conclusão
         next_task = Task.query.filter_by(
             process_id=task.process_id,
             order=task.order + 1
@@ -107,12 +135,12 @@ def finalizar_processo(process_id):
         return jsonify({"error": "Nem todas as tarefas estão concluídas"}), 400
 
     processo.is_active = False
-    processo.end_date = datetime.utcnow()
+    processo.end_date = datetime.utcnow()  # Marca data de finalização
     db.session.commit()
 
     return jsonify({"message": "Processo finalizado com sucesso"})
 
-# Atribuir tarefa
+# Atribuir tarefa manualmente
 @process_bp.route("/task/<int:task_id>/atribuir", methods=["POST"])
 @login_required
 def atribuir_usuario(task_id):
@@ -131,14 +159,43 @@ def atribuir_usuario(task_id):
 
     return jsonify({"message": f"Tarefa atribuída a {user.name or user.username}"})
 
-# Minhas tarefas
+# Minhas tarefas (com filtro por status e datas, e filtro automático para concluídas do mês vigente)
 @process_bp.route("/minhas-tarefas", methods=["GET"])
 @login_required
 def minhas_tarefas():
     status_filtro = request.args.get("status")
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
     query = Task.query.filter_by(assigned_user_id=current_user.id)
+
     if status_filtro:
         query = query.filter_by(status=status_filtro)
+
+    if start_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            query = query.filter(Task.start_date >= start_date)
+        except ValueError:
+            pass
+
+    if end_date_str:
+        try:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            query = query.filter(Task.end_date <= end_date)
+        except ValueError:
+            pass
+
+    # Filtro automático: para tarefas concluídas sem filtro explícito, mostrar só do mês vigente
+    if not status_filtro:
+        hoje = datetime.utcnow()
+        primeiro_dia_mes = hoje.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        ultimo_dia_mes = (primeiro_dia_mes + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
+
+        query = query.filter(
+            (Task.status != "concluída") |
+            ((Task.status == "concluída") & (Task.end_date >= primeiro_dia_mes) & (Task.end_date <= ultimo_dia_mes))
+        )
 
     tarefas = query.order_by(Task.status, Task.order).all()
 
@@ -147,7 +204,10 @@ def minhas_tarefas():
         "name": t.title,
         "status": t.status,
         "order": t.order,
-        "process_id": t.process_id
+        "process_id": t.process_id,
+        "start_date": t.start_date.isoformat() if t.start_date else None,
+        "end_date": t.end_date.isoformat() if t.end_date else None,
+        "assignee": t.assigned_user.name if t.assigned_user else None
     } for t in tarefas])
 
 # Resumo de tarefas por status
@@ -199,9 +259,19 @@ def listar_modelos():
     modelos = ProcessModel.query.all()
     return jsonify([{"id": m.id, "name": m.name} for m in modelos])
 
-# ✅ NOVA ROTA: Listar usuários (para selecionar o responsável)
+# Listar usuários
 @process_bp.route("/users/list", methods=["GET"])
 @login_required
 def listar_usuarios():
     usuarios = User.query.all()
     return jsonify([{"id": u.id, "name": u.name or u.username} for u in usuarios])
+
+# Rota temporária para atribuir tarefas sem responsável
+@process_bp.route("/atribuir-tarefas-nulas", methods=["GET"])
+@login_required
+def atribuir_tarefas_nulas():
+    tarefas = Task.query.filter_by(assigned_user_id=None).all()
+    for t in tarefas:
+        t.assigned_user_id = current_user.id
+    db.session.commit()
+    return jsonify({"message": f"{len(tarefas)} tarefas atribuídas ao usuário {current_user.name}."})
