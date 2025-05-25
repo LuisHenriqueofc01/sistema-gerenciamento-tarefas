@@ -4,7 +4,7 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 {% for category, message in messages %}
-<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+<div class="alert alert-{{ category }} alert-dismissible fade show shadow" role="alert">
     {{ message }}
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
@@ -12,26 +12,37 @@
 {% endif %}
 {% endwith %}
 
-<h2 class="mb-4">Painel do Administrador</h2>
+<h2 class="mb-4">PAINEL DOS ADMINISTRADORES</h2>
 
 <!-- Criar Novo Usuário -->
-<div class="bg-light p-4 rounded shadow-sm mb-4">
-    <h4>Criar Novo Usuário</h4>
-    <form action="{{ url_for('views.create_user') }}" method="POST" class="row g-3">
-        <div class="col-md-3"><input type="text" name="username" class="form-control" placeholder="Usuário" required>
+<div class="bg-white p-4 shadow-sm mb-4">
+    <h4 class="mb-3">CRIAR NOVO USUÁRIO</h4>
+    <form action="{{ url_for('views.create_user') }}" method="POST" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">USUÁRIO</label>
+            <input type="text" name="username" class="form-control border-secondary" required>
         </div>
-        <div class="col-md-3"><input type="text" name="name" class="form-control" placeholder="Nome completo" required>
+        <div class="col-md-3">
+            <label class="form-label">NOME COMPLETO</label>
+            <input type="text" name="name" class="form-control border-secondary" required>
         </div>
-        <div class="col-md-3"><input type="email" name="email" class="form-control" placeholder="Email" required></div>
-        <div class="col-md-3"><input type="password" name="password" class="form-control" placeholder="Senha" required>
+        <div class="col-md-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control border-secondary" required>
         </div>
-        <div class="col-12"><button type="submit" class="btn btn-primary">Criar</button></div>
+        <div class="col-md-3">
+            <label class="form-label">SENHA</label>
+            <input type="password" name="password" class="form-control border-secondary" required>
+        </div>
+        <div class="col-12 text-end">
+            <button type="submit" class="btn btn-primary">Criar</button>
+        </div>
     </form>
 </div>
 
 <!-- Lista de Administradores -->
 <div class="mb-4">
-    <h4>Administradores</h4>
+    <h4>ADMINISTRADORES</h4>
     {% for user in users if user.is_admin %}
     <div class="d-flex justify-content-between align-items-center bg-info bg-opacity-25 p-3 rounded mb-2">
         <span>{{ user.username }} - {{ user.name }} (admin)</span>
@@ -47,9 +58,9 @@
 
 <!-- Lista de Usuários Comuns -->
 <div class="mb-4">
-    <h4>Usuários Comuns</h4>
+    <h4>USUÁRIOS</h4>
     {% for user in users if not user.is_admin %}
-    <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-2">
+    <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm mb-2">
         <span>{{ user.username }} - {{ user.name }}</span>
         <div class="d-flex gap-2">
             <form id="form-excluir-usuario-{{ user.id }}" action="{{ url_for('views.delete_user', user_id=user.id) }}"
@@ -67,29 +78,39 @@
 </div>
 
 <!-- Criar Tarefa para Usuário -->
-<div class="bg-light p-4 rounded shadow-sm mb-4">
-    <h4>Criar Tarefa para Usuário</h4>
-    <form action="{{ url_for('views.create_task') }}" method="POST" class="row g-3">
-        <div class="col-md-3"><input type="text" name="title" class="form-control" placeholder="Título" required></div>
-        <div class="col-md-3"><input type="text" name="description" class="form-control" placeholder="Descrição"
-                required></div>
+<div class="bg-white p-4 shadow-sm mb-4">
+    <h4 class="mb-3">CRIAR TAREFA PARA USUÁRIO</h4>
+    <form action="{{ url_for('views.create_task') }}" method="POST" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">TÍTULO</label>
+            <input type="text" name="title" class="form-control border-secondary" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">DESCRIÇÃO</label>
+            <input type="text" name="description" class="form-control border-secondary" required>
+        </div>
         <div class="col-md-2">
-            <select name="user_id" class="form-select" required>
-                <option value="" disabled selected>Selecione o usuário</option>
+            <label class="form-label">USUÁRIO</label>
+            <select name="user_id" class="form-select border-secondary" required>
+                <option value="" disabled selected>SELECIONE UM USUÁRIO</option>
                 {% for user in users %}
                 <option value="{{ user.id }}">{{ user.username }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-2"><input type="date" name="end_date" class="form-control" placeholder="Data de Vencimento">
+        <div class="col-md-2">
+            <label class="form-label">DATA DE ENTREGA</label>
+            <input type="date" name="end_date" class="form-control border-secondary">
         </div>
-        <div class="col-md-2"><button type="submit" class="btn btn-info w-100">Criar Tarefa</button></div>
+        <div class="col-md-2 text-end">
+            <button type="submit" class="btn btn-info w-100">Criar Tarefa</button>
+        </div>
     </form>
 </div>
 
 <!-- Lista de Tarefas -->
 <div>
-    <h4>Lista de Tarefas</h4>
+    <h4 class="mb-3">LISTA DE TAREFAS</h4>
     {% for task in tasks %}
     <div class="d-flex justify-content-between align-items-center bg-warning bg-opacity-25 p-3 rounded mb-2">
         <span>
@@ -99,7 +120,7 @@
         <div class="d-flex gap-2">
             <form action="{{ url_for('views.update_task_status', task_id=task.id) }}" method="POST"
                 class="d-flex gap-2">
-                <select name="status" class="form-select form-select-sm">
+                <select name="status" class="form-select form-select-sm border-secondary">
                     <option value="pendente" {% if task.status=='pendente' %}selected{% endif %}>Pendente</option>
                     <option value="em progresso" {% if task.status=='em progresso' %}selected{% endif %}>Em Progresso
                     </option>
@@ -117,5 +138,4 @@
     </div>
     {% endfor %}
 </div>
-
 {% endblock %}

@@ -122,23 +122,6 @@ def create_task():
             return redirect(url_for("views.admin_panel"))
 
         assigned_user_id = int(user_id)
-        process = ProcessInstance.query.first()
-
-        if not process:
-            flash("Nenhum processo encontrado. Crie um processo antes de atribuir tarefas.", "danger")
-            return redirect(url_for("views.admin_panel"))
-
-        tarefa_existente = Task.query.filter_by(
-            title=title.strip(),
-            assigned_user_id=assigned_user_id,
-            process_id=process.id
-        ).first()
-
-        if tarefa_existente:
-            flash("Esta tarefa já foi criada para o usuário no processo atual.", "warning")
-            return redirect(url_for("views.admin_panel"))
-
-        ultima_ordem = db.session.query(db.func.max(Task.order)).filter_by(process_id=process.id).scalar() or 0
 
         end_date = None
         if end_date_str:
@@ -152,8 +135,8 @@ def create_task():
             title=title.strip(),
             description=description.strip(),
             assigned_user_id=assigned_user_id,
-            process_id=process.id,
-            order=ultima_ordem + 1,
+            process_id=None,
+            order=0,
             status="pendente",
             start_date=datetime.utcnow(),
             end_date=end_date or datetime.utcnow() + timedelta(days=7)
@@ -307,7 +290,7 @@ def criar_modelo_processo():
     try:
         modelo = ProcessModel(name=nome)
         db.session.add(modelo)
-        db.session.flush()  # Garante que modelo.id esteja disponível
+        db.session.flush()
 
         for i, t in enumerate(tarefas, start=1):
             nova = TaskTemplate(name=t["name"], order=i, model_id=modelo.id)
@@ -324,3 +307,11 @@ def criar_modelo_processo():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Erro ao criar modelo: {str(e)}"}), 500
+
+# ------------------------- LISTAGEM DE MODELOS (AJAX) -------------------------
+@views_bp.route("/process/models/list")
+@login_required
+@admin_required
+def listar_modelos_json():
+    modelos = ProcessModel.query.order_by(ProcessModel.name).all()
+    return jsonify([{"id": m.id, "name": m.name} for m in modelos])

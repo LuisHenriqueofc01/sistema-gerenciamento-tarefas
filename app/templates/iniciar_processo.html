@@ -4,32 +4,32 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4">Iniciar Novo Processo</h2>
+    <h2 class="mb-4">INICIAR NOVO PROCESSO</h2>
 
     <form id="processo-form">
         <input type="hidden" name="process_id" id="process-id" value="">
 
         <div class="mb-3">
             <label for="modelo">Escolha um modelo:</label>
-            <select id="modelo" class="form-select" required>
+            <select id="modelo" class="form-select border-secondary" required>
                 <option value="" disabled selected>Selecione um modelo...</option>
             </select>
         </div>
 
         <div class="mb-3">
-            <input id="nome-processo" class="form-control" placeholder="Nome do processo" required />
+            <input id="nome-processo" class="form-control border-secondary" placeholder="Nome do processo" required />
         </div>
 
         <div class="mb-3">
             <label for="responsavel">Responsável:</label>
-            <select id="responsavel" class="form-select" required>
+            <select id="responsavel" class="form-select border-secondary" required>
                 <option value="" disabled selected>Selecione um responsável...</option>
             </select>
         </div>
 
         <div class="mb-3">
             <label for="data-entrega">Data de entrega do processo:</label>
-            <input type="date" id="data-entrega" class="form-control" />
+            <input type="date" id="data-entrega" class="form-control border-secondary" />
         </div>
 
         <button type="submit" class="btn btn-success">Iniciar</button>
@@ -38,7 +38,6 @@
     <div id="mensagem-processo" class="mt-3 text-success"></div>
     <div id="tarefas-processo" class="mt-4"></div>
 
-    <!-- Processos Existentes -->
     <div class="mt-5">
         <h4>Processos Existentes</h4>
         <ul class="list-group">
@@ -128,18 +127,21 @@
 
                 data.tarefas.forEach(t => {
                     const row = document.createElement('div');
-                    row.className = 'mb-2';
+                    row.className = 'row mb-2 align-items-center';
 
                     row.innerHTML = `
-                    <input type="hidden" name="id" value="${t.id}">
-                    <input class="form-control mb-1" type="text" name="titulo" value="${t.titulo}">
-                    <select class="form-select mb-1" name="status">
-                        <option value="pendente" ${t.status === "pendente" ? "selected" : ""}>pendente</option>
-                        <option value="em_progresso" ${t.status === "em_progresso" ? "selected" : ""}>em progresso</option>
-                        <option value="concluída" ${t.status === "concluída" ? "selected" : ""}>concluída</option>
-                        <option value="validada" ${t.status === "validada" ? "selected" : ""}>validada</option>
-                    </select>
-                `;
+                        <input type="hidden" name="id" value="${t.id}">
+                        <div class="col-md-8">
+                            <input class="form-control border-secondary" type="text" name="titulo" value="${t.titulo}" placeholder="Título da tarefa">
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select border-secondary" name="status">
+                                <option value="pendente" ${t.status === "pendente" ? "selected" : ""}>pendente</option>
+                                <option value="em_progresso" ${t.status === "em_progresso" ? "selected" : ""}>em progresso</option>
+                                <option value="concluída" ${t.status === "concluída" ? "selected" : ""}>concluída</option>
+                            </select>
+                        </div>
+                    `;
                     lista.appendChild(row);
                 });
 
@@ -155,7 +157,7 @@
                     e.preventDefault();
 
                     const payload = [];
-                    const rows = form.querySelectorAll('div.mb-2');
+                    const rows = form.querySelectorAll('.row');
                     rows.forEach(row => {
                         payload.push({
                             id: row.querySelector('[name="id"]').value,
@@ -181,7 +183,6 @@
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
 
     document.getElementById("processo-form").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -215,9 +216,7 @@
             document.getElementById("data-entrega").value = "";
             document.getElementById("process-id").value = "";
             document.getElementById("tarefas-processo").innerHTML = "";
-
-            // ✅ ADICIONE ESTA LINHA:
-            location.reload();  // Isso faz a página atualizar após o processo ser salvo
+            location.reload();
         }
     });
 

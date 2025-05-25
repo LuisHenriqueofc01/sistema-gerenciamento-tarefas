@@ -7,10 +7,12 @@
     <h2 class="mb-4">Login no Sistema</h2>
     <form id="login-form">
         <div class="mb-3">
-            <input type="text" id="login-username" class="form-control" placeholder="Usuário" required />
+            <input type="text" id="login-username" class="form-control border-secondary" placeholder="Usuário"
+                required />
         </div>
         <div class="mb-3">
-            <input type="password" id="login-password" class="form-control" placeholder="Senha" required />
+            <input type="password" id="login-password" class="form-control border-secondary" placeholder="Senha"
+                required />
         </div>
         <button type="submit" class="btn btn-primary">Entrar</button>
     </form>
@@ -39,7 +41,7 @@
                 mensagem.classList.remove("text-danger");
                 mensagem.classList.add("text-success");
                 mensagem.textContent = "Login bem-sucedido!";
-                window.location.href = "/criar-modelo"; // ✅ Redirecione para a página inicial após login
+                window.location.href = "/criar-modelo"; // Redireciona após login
             }
         } catch (err) {
             document.getElementById("mensagem").textContent = "Erro de conexão com o servidor.";
