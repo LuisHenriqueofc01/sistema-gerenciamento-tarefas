@@ -67,17 +67,17 @@
     {% endfor %}
 </div>
 
-<!-- Criar Tarefa -->
+<!-- Criar Tarefa para Usuário -->
 <div class="bg-light p-4 rounded shadow-sm mb-4">
     <h4>Criar Tarefa para Usuário</h4>
     <form action="{{ url_for('views.create_task') }}" method="POST" class="row g-3">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <input type="text" name="title" class="form-control" placeholder="Título" required>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <input type="text" name="description" class="form-control" placeholder="Descrição" required>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-2">
             <select name="user_id" class="form-select" required>
                 <option value="" disabled selected>Selecione o usuário</option>
                 {% for user in users %}
@@ -85,8 +85,11 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-12">
-            <button type="submit" class="btn btn-info">Criar Tarefa</button>
+        <div class="col-md-2">
+            <input type="date" name="end_date" class="form-control" placeholder="Data de Vencimento">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-info w-100">Criar Tarefa</button>
         </div>
     </form>
 </div>
@@ -96,19 +99,28 @@
     <h4>Lista de Tarefas</h4>
     {% for task in tasks %}
     <div class="d-flex justify-content-between align-items-center bg-warning bg-opacity-25 p-3 rounded mb-2">
-        <span>{{ task.title }} - {{ task.status }}
-            ({{ task.assignee.username if task.assignee else 'Sem usuário' }})
+        <span>
+            {{ task.title }} - {{ task.status }}
+            ({{ task.assigned_user.username if task.assigned_user else 'Sem usuário' }})
         </span>
-        <form action="{{ url_for('views.update_task_status', task_id=task.id) }}" method="POST" class="d-flex gap-2">
-            <select name="status" class="form-select form-select-sm">
-                <option value="pendente" {% if task.status=='pendente' %}selected{% endif %}>Pendente</option>
-                <option value="em progresso" {% if task.status=='em progresso' %}selected{% endif %}>Em Progresso
-                </option>
-                <option value="concluída" {% if task.status=='concluída' %}selected{% endif %}>Concluída</option>
-            </select>
-            <button type="submit" class="btn btn-primary btn-sm">Atualizar</button>
-        </form>
+        <div class="d-flex gap-2">
+            <form action="{{ url_for('views.update_task_status', task_id=task.id) }}" method="POST"
+                class="d-flex gap-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="pendente" {% if task.status=='pendente' %}selected{% endif %}>Pendente</option>
+                    <option value="em progresso" {% if task.status=='em progresso' %}selected{% endif %}>Em Progresso
+                    </option>
+                    <option value="concluída" {% if task.status=='concluída' %}selected{% endif %}>Concluída</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Atualizar</button>
+            </form>
+            <form action="{{ url_for('views.delete_task', task_id=task.id) }}" method="POST"
+                onsubmit="return confirm('Tem certeza que deseja excluir esta tarefa?');">
+                <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+            </form>
+        </div>
     </div>
     {% endfor %}
 </div>
+
 {% endblock %}

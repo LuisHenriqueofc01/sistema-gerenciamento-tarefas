@@ -51,6 +51,7 @@
     .task-card.concluída {
         background-color: #d4edda;
         border-left-color: #28a745;
+        cursor: default;
     }
 
     .task-card.atrasada {
@@ -61,7 +62,6 @@
 
 <h2 class="mb-4">Painel de Tarefas - Kanban</h2>
 
-<!-- Filtro de datas -->
 <div class="mb-3 d-flex gap-2 align-items-center">
     <label for="start-date" class="form-label mb-0">Início:</label>
     <input type="date" id="start-date" class="form-control" />
@@ -70,7 +70,6 @@
     <button class="btn btn-primary" onclick="carregarTarefas(true)">Filtrar</button>
 </div>
 
-<!-- Toast -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
     <div id="toast-status" class="toast align-items-center text-white bg-success border-0" role="alert">
         <div class="d-flex">
@@ -105,31 +104,29 @@
     const concluidaLimit = 10;
     let concluidaTarefasCompletas = [];
 
-    function setFiltroMesAtual() {
-        const hoje = new Date();
-        const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-
-        document.getElementById("start-date").value = primeiroDia.toISOString().slice(0, 10);
-        document.getElementById("end-date").value = ultimoDia.toISOString().slice(0, 10);
-    }
-
     document.addEventListener("DOMContentLoaded", () => {
         setFiltroMesAtual();
         carregarTarefas();
     });
+
+    function setFiltroMesAtual() {
+        const hoje = new Date();
+        const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+        document.getElementById("start-date").value = primeiroDia.toISOString().slice(0, 10);
+        document.getElementById("end-date").value = ultimoDia.toISOString().slice(0, 10);
+    }
 
     function mostrarToast(msg, tipo = "success") {
         const toastEl = document.getElementById("toast-status");
         const toastBody = document.getElementById("toast-body");
         toastBody.textContent = msg;
         toastEl.className = `toast align-items-center text-white bg-${tipo} border-0`;
-        const bsToast = new bootstrap.Toast(toastEl);
-        bsToast.show();
+        new bootstrap.Toast(toastEl).show();
     }
 
     async function carregarTarefas(resetConcluidas = false) {
-        if(resetConcluidas) {
+        if (resetConcluidas) {
             concluidaOffset = 0;
             concluidaTarefasCompletas = [];
             document.getElementById("concluidas-tarefas").innerHTML = "";
@@ -139,12 +136,21 @@
         const startDate = document.getElementById("start-date").value;
         const endDate = document.getElementById("end-date").value;
 
-        let url = `/process/minhas-tarefas?start_date=${startDate}&end_date=${endDate}`;
+        let url = "/process/minhas-tarefas";
+        const params = new URLSearchParams();
+
+        if (startDate) params.append("start_date", startDate);
+        if (endDate) params.append("end_date", endDate);
+        url += `?${params.toString()}`;
 
         const res = await fetch(url, { credentials: "include" });
         const tarefas = await res.json();
 
-        // Limpa colunas pendente e em_progresso
+        if (tarefas.error) {
+            mostrarToast(tarefas.error, "danger");
+            return;
+        }
+
         ["pendente", "em_progresso"].forEach(status => {
             const coluna = document.getElementById(status);
             const titulo = coluna.querySelector("h5").textContent;
@@ -155,9 +161,7 @@
                 coluna.classList.add("drag-over");
             });
 
-            coluna.addEventListener("dragleave", () => {
-                coluna.classList.remove("drag-over");
-            });
+            coluna.addEventListener("dragleave", () => coluna.classList.remove("drag-over"));
 
             coluna.addEventListener("drop", async e => {
                 e.preventDefault();
@@ -179,69 +183,63 @@
             });
         });
 
-        // Renderiza pendentes e em progresso
-        tarefas.filter(t => t.status !== "concluída").forEach(t => {
-            const coluna = document.getElementById(t.status);
+        tarefas.filter(t => t.status !== "concluída").forEach(t => renderTarefa(t));
 
-            let atrasada = false;
-            if(t.end_date) {
-                const endDate = new Date(t.end_date);
-                atrasada = endDate < new Date() && t.status !== "concluída";
-            }
-
-            const div = document.createElement("div");
-            div.className = `task-card ${t.status}` + (atrasada ? " atrasada" : "");
-            div.setAttribute("draggable", "true");
-            div.dataset.taskId = t.id;
-
-            const podeConcluir = t.status === "em_progresso";
-
-            const dataEntrega = t.end_date ? new Date(t.end_date) : null;
-            const dataEntregaFormatada = dataEntrega ? 
-                dataEntrega.toLocaleDateString('pt-BR') : 'Sem data';
-
-            div.innerHTML = `
-                <strong>${icones[t.status] || ""} ${t.name}</strong><br>
-                Responsável: ${t.assignee || "Ninguém"}<br>
-                Entrega: ${dataEntregaFormatada}<br>
-                ${podeConcluir ? `<button class="btn btn-sm btn-success mt-1" onclick="concluirTarefa(${t.id})">Concluir</button>` : ""}
-            `;
-
-            div.addEventListener("dragstart", e => {
-                e.dataTransfer.setData("text/plain", t.id);
-            });
-
-            coluna.appendChild(div);
-        });
-
-        // Tarefas concluídas paginadas
-        const concluidaDiv = document.getElementById("concluidas-tarefas");
-        concluidaTarefasCompletas = concluidaTarefasCompletas.concat(tarefas.filter(t => t.status === "concluída"));
+        const novasConcluidas = tarefas.filter(t => t.status === "concluída" && !concluidaTarefasCompletas.some(e => e.id === t.id));
+        concluidaTarefasCompletas = concluidaTarefasCompletas.concat(novasConcluidas);
 
         renderizarConcluidasPaginadas();
+    }
+
+    function renderTarefa(t) {
+        const coluna = document.getElementById(t.status);
+        let atrasada = false;
+        if (t.end_date) atrasada = new Date(t.end_date) < new Date();
+
+        const div = document.createElement("div");
+        div.className = `task-card ${t.status}${atrasada ? " atrasada" : ""}`;
+        div.setAttribute("draggable", "true");
+        div.dataset.taskId = t.id;
+
+        const dataEntrega = t.end_date ? new Date(t.end_date) : null;
+        const dataEntregaFormatada = dataEntrega ? dataEntrega.toLocaleDateString('pt-BR') : 'Sem data';
+
+        div.innerHTML = `
+            <strong>${icones[t.status] || ""} ${t.name}</strong><br>
+            Responsável: ${t.assignee || "Ninguém"}<br>
+            Entrega: ${dataEntregaFormatada}<br>
+            <div class="mt-2 d-flex gap-1">
+                ${t.status === "em_progresso" ? `<button class="btn btn-sm btn-success" onclick="concluirTarefa(${t.id})">Concluir</button>` : ""}
+                <button class="btn btn-sm btn-danger" onclick="confirmarExclusaoTarefa(${t.id})">Excluir</button>
+            </div>
+        `;
+
+        div.addEventListener("dragstart", e => {
+            if (t.status !== "concluída") {
+                e.dataTransfer.setData("text/plain", t.id);
+            } else {
+                e.preventDefault();
+            }
+        });
+
+        coluna.appendChild(div);
     }
 
     function renderizarConcluidasPaginadas() {
         const concluidaDiv = document.getElementById("concluidas-tarefas");
         concluidaDiv.innerHTML = "";
-
         const slice = concluidaTarefasCompletas.slice(concluidaOffset, concluidaOffset + concluidaLimit);
 
         slice.forEach(t => {
-            let atrasada = false;
-            if(t.end_date) {
-                const endDate = new Date(t.end_date);
-                atrasada = endDate < new Date() && t.status !== "concluída";
-            }
-
             const div = document.createElement("div");
-            div.className = `task-card concluída` + (atrasada ? " atrasada" : "");
-            div.setAttribute("draggable", "true");
-            div.dataset.taskId = t.id;
+            let atrasada = false;
+            if (t.end_date) atrasada = new Date(t.end_date) < new Date();
+
+            div.className = `task-card concluída${atrasada ? " atrasada" : ""}`;
+            div.setAttribute("draggable", "false");
 
             const dataEntrega = t.end_date ? new Date(t.end_date) : null;
-            const dataEntregaFormatada = dataEntrega ? 
-                dataEntrega.toLocaleDateString('pt-BR') : 'Sem data';
+            const dataEntregaFormatada = dataEntrega ? dataEntrega.toLocaleDateString('pt-BR') : 'Sem data';
 
             div.innerHTML = `
                 <strong>${icones["concluída"]} ${t.name}</strong><br>
@@ -249,19 +247,11 @@
                 Entrega: ${dataEntregaFormatada}<br>
             `;
 
-            div.addEventListener("dragstart", e => {
-                e.dataTransfer.setData("text/plain", t.id);
-            });
-
             concluidaDiv.appendChild(div);
         });
 
         const carregarBtn = document.getElementById("carregar-mais-btn");
-        if (concluidaOffset + concluidaLimit < concluidaTarefasCompletas.length) {
-            carregarBtn.style.display = "block";
-        } else {
-            carregarBtn.style.display = "none";
-        }
+        carregarBtn.style.display = concluidaOffset + concluidaLimit < concluidaTarefasCompletas.length ? "block" : "none";
     }
 
     document.getElementById("carregar-mais-btn").addEventListener("click", () => {
@@ -270,8 +260,7 @@
     });
 
     async function concluirTarefa(taskId) {
-        const confirmar = confirm("Tem certeza que deseja concluir esta tarefa?");
-        if (!confirmar) return;
+        if (!confirm("Tem certeza que deseja concluir esta tarefa?")) return;
 
         const res = await fetch(`/process/task/${taskId}/status`, {
             method: "POST",
@@ -285,4 +274,5 @@
         carregarTarefas(true);
     }
 </script>
+
 {% endblock %}

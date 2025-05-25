@@ -73,11 +73,13 @@ class Task(db.Model):
     process_id = db.Column(db.Integer, db.ForeignKey('process_instances.id'), nullable=False)
 
     assigned_user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    assigned_user = db.relationship('User', backref='tasks')
+    assigned_user = db.relationship('User', backref='tarefas_atribuidas')
 
-    start_date = db.Column(db.DateTime)
+    start_date = db.Column(db.DateTime, default=datetime.utcnow)
     end_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # agora obrigatório
     status = db.Column(db.String(20), default="pendente")  # pendente, em_progresso, concluída, validada
 
     def is_completed(self):
         return self.status in ["concluída", "validada"]
+

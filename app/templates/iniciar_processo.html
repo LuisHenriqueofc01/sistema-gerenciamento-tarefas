@@ -25,6 +25,11 @@
             </select>
         </div>
 
+        <div class="mb-3">
+            <label for="data-entrega">Data de entrega do processo:</label>
+            <input type="date" id="data-entrega" class="form-control" />
+        </div>
+
         <button type="submit" class="btn btn-success">Iniciar</button>
     </form>
 
@@ -71,6 +76,7 @@
         const model_id = document.getElementById("modelo").value;
         const name = document.getElementById("nome-processo").value.trim();
         const responsavel_id = document.getElementById("responsavel").value;
+        const end_date = document.getElementById("data-entrega").value;
 
         if (!model_id || !name || !responsavel_id) {
             return alert("Preencha todos os campos.");
@@ -80,7 +86,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ model_id, name, responsavel_id })
+            body: JSON.stringify({ model_id, name, responsavel_id, end_date })
         });
 
         const data = await res.json();
@@ -92,6 +98,7 @@
             document.getElementById("nome-processo").value = "";
             document.getElementById("modelo").value = "";
             document.getElementById("responsavel").value = "";
+            document.getElementById("data-entrega").value = "";
         }
     });
 

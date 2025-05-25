@@ -4,6 +4,7 @@ from app.models.models import ProcessInstance, User, Task
 from werkzeug.security import generate_password_hash
 from app import db
 from functools import wraps
+from datetime import datetime, timedelta
 
 views_bp = Blueprint("views", __name__)
 
@@ -35,13 +36,8 @@ def iniciar_processo():
 @views_bp.route("/kanban")
 @login_required
 def kanban():
-    tarefas = Task.query.filter_by(assigned_user_id=current_user.id).all()
+    tarefas = Task.query.all() if current_user.is_admin else Task.query.filter_by(assigned_user_id=current_user.id).all()
     return render_template("kanban.html", tarefas=tarefas, usuario=current_user)
-
-@views_bp.route("/revisao-processo")
-@login_required
-def revisao_processo():
-    return render_template("revisao.html")
 
 @views_bp.route("/processo-finalizado")
 @login_required
@@ -80,7 +76,7 @@ def create_user():
         password = request.form["password"]
 
         if User.query.filter_by(username=username).first():
-            flash("Usuário já existe com esse username.", "danger")
+            flash("Já existe um usuário com esse nome de usuário.", "danger")
             return redirect(url_for("views.admin_panel"))
         if User.query.filter_by(email=email).first():
             flash("Já existe um usuário com esse e-mail.", "danger")
@@ -113,26 +109,59 @@ def create_task():
     try:
         title = request.form["title"]
         description = request.form["description"]
-        assigned_user_id = int(request.form["user_id"])
+        user_id = request.form.get("user_id")
+        end_date_str = request.form.get("end_date")
 
+        if not user_id:
+            flash("Você deve selecionar um usuário.", "danger")
+            return redirect(url_for("views.admin_panel"))
+
+        assigned_user_id = int(user_id)
         process = ProcessInstance.query.first()
+
         if not process:
             flash("Nenhum processo encontrado. Crie um processo antes de atribuir tarefas.", "danger")
             return redirect(url_for("views.admin_panel"))
 
+        tarefa_existente = Task.query.filter_by(
+            title=title.strip(),
+            assigned_user_id=assigned_user_id,
+            process_id=process.id
+        ).first()
+
+        if tarefa_existente:
+            flash("Esta tarefa já foi criada para o usuário no processo atual.", "warning")
+            return redirect(url_for("views.admin_panel"))
+
+        ultima_ordem = db.session.query(db.func.max(Task.order)).filter_by(process_id=process.id).scalar() or 0
+
+        end_date = None
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            except ValueError:
+                flash("Data de vencimento inválida.", "danger")
+                return redirect(url_for("views.admin_panel"))
+
         task = Task(
-            title=title,
-            description=description,
+            title=title.strip(),
+            description=description.strip(),
             assigned_user_id=assigned_user_id,
             process_id=process.id,
-            order=1
+            order=ultima_ordem + 1,
+            status="pendente",
+            start_date=datetime.utcnow(),
+            end_date=end_date or datetime.utcnow() + timedelta(days=7)
         )
+
         db.session.add(task)
         db.session.commit()
-        flash("Tarefa atribuída com sucesso.", "success")
+        flash("Tarefa criada e atribuída com sucesso!", "success")
+
     except Exception as e:
         db.session.rollback()
         flash(f"Erro ao criar tarefa: {str(e)}", "danger")
+
     return redirect(url_for("views.admin_panel"))
 
 @views_bp.route("/admin/update_task_status/<int:task_id>", methods=["POST"])
@@ -142,7 +171,17 @@ def update_task_status(task_id):
     task = Task.query.get_or_404(task_id)
     task.status = request.form["status"]
     db.session.commit()
-    flash("Status atualizado.", "success")
+    flash("Status da tarefa atualizado com sucesso.", "success")
+    return redirect(url_for("views.admin_panel"))
+
+@views_bp.route("/admin/delete_task/<int:task_id>", methods=["POST"])
+@login_required
+@admin_required
+def delete_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    db.session.delete(task)
+    db.session.commit()
+    flash("Tarefa excluída com sucesso.", "success")
     return redirect(url_for("views.admin_panel"))
 
 @views_bp.route("/admin/promote/<int:user_id>", methods=["POST"])
@@ -152,5 +191,5 @@ def promote_user(user_id):
     user = User.query.get_or_404(user_id)
     user.is_admin = True
     db.session.commit()
-    flash(f"O usuário {user.username} agora é administrador.", "success")
+    flash(f"O usuário {user.username} agora é um administrador.", "success")
     return redirect(url_for("views.admin_panel"))
