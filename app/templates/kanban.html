@@ -210,7 +210,11 @@
             Entrega: ${dataEntregaFormatada}<br>
             <div class="mt-2 d-flex gap-1">
                 ${t.status === "em_progresso" ? `<button class="btn btn-sm btn-success" onclick="concluirTarefa(${t.id})">Concluir</button>` : ""}
-                <button class="btn btn-sm btn-danger" onclick="confirmarExclusaoTarefa(${t.id})">Excluir</button>
+                <form id="form-excluir-tarefa-${t.id}" action="/excluir_tarefa/${t.id}" method="POST" style="display: none;"></form>
+                <button class="btn btn-sm btn-danger" onclick="confirmarExclusaoPadrao({
+                    texto: 'Você deseja realmente excluir esta tarefa?',
+                    onConfirmar: () => document.getElementById('form-excluir-tarefa-${t.id}').submit()
+                })">Excluir</button>
             </div>
         `;
 

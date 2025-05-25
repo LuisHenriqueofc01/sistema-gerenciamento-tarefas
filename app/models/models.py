@@ -55,6 +55,7 @@ class ProcessInstance(db.Model):
     start_date = db.Column(db.DateTime, default=datetime.utcnow)
     end_date = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Campo adicionado
 
     responsavel_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     responsavel = db.relationship('User', backref='processos_responsaveis')
@@ -77,9 +78,8 @@ class Task(db.Model):
 
     start_date = db.Column(db.DateTime, default=datetime.utcnow)
     end_date = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # agora obrigatório
-    status = db.Column(db.String(20), default="pendente")  # pendente, em_progresso, concluída, validada
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    status = db.Column(db.String(20), default="pendente")
 
     def is_completed(self):
         return self.status in ["concluída", "validada"]
-

@@ -45,44 +45,66 @@
         </div>
     </nav>
 
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="alert-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
     {% block content %}{% endblock %}
 
-    <!-- Scripts de confirmação -->
+    <!-- SweetAlert2 Confirmação -->
     <script>
-        function confirmarExclusaoTarefa(tarefaId) {
+        function confirmarExclusaoPadrao({
+            titulo = "Tem certeza?",
+            texto = "Você deseja realmente excluir este item?",
+            confirmarTexto = "Sim, excluir",
+            urlRedirecionar,
+            onConfirmar
+        }) {
             Swal.fire({
-                title: 'Tem certeza?',
-                text: "Você deseja realmente excluir esta tarefa?",
                 icon: 'warning',
+                title: titulo,
+                text: texto,
                 showCancelButton: true,
+                confirmButtonText: confirmarTexto,
+                cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Sim, excluir',
-                cancelButtonText: 'Cancelar'
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = `/excluir_tarefa/${tarefaId}`;
-                }
-            });
-        }
-
-        function confirmarExclusaoUsuario(usuarioId) {
-            Swal.fire({
-                title: 'Excluir usuário?',
-                text: "Essa ação é irreversível. Deseja continuar?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sim, excluir',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = `/excluir_usuario/${usuarioId}`;
+                    if (onConfirmar) {
+                        onConfirmar();
+                    } else if (urlRedirecionar) {
+                        window.location.href = urlRedirecionar;
+                    }
                 }
             });
         }
     </script>
+
+    <!-- Auto-dismiss flash alerts -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach((alert) => {
+                setTimeout(() => {
+                    const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                    bsAlert.close();
+                }, 4000);
+            });
+        });
+    </script>
+
 </body>
 
 </html>
