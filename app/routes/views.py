@@ -41,8 +41,25 @@ def iniciar_processo():
 @views_bp.route("/kanban")
 @login_required
 def kanban():
-    tarefas = Task.query.all() if current_user.is_admin else Task.query.filter_by(assigned_user_id=current_user.id).all()
-    return render_template("kanban.html", tarefas=tarefas, usuario=current_user)
+    if current_user.is_admin:
+        tarefas_com_processo = Task.query.filter(Task.process_id.isnot(None)).all()
+        tarefas_sem_processo = Task.query.filter(Task.process_id.is_(None)).all()
+    else:
+        tarefas_com_processo = Task.query.filter(
+            Task.assigned_user_id == current_user.id,
+            Task.process_id.isnot(None)
+        ).all()
+        tarefas_sem_processo = Task.query.filter(
+            Task.assigned_user_id == current_user.id,
+            Task.process_id.is_(None)
+        ).all()
+
+    return render_template(
+        "kanban.html",
+        tarefas=tarefas_com_processo + tarefas_sem_processo,
+        usuario=current_user
+    )
+
 
 @views_bp.route("/processo-finalizado")
 @login_required
