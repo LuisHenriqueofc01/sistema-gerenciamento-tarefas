@@ -21,9 +21,21 @@
         </div>
         <div class="mb-3">
             <label for="password" class="form-label">Senha:</label>
-            <input type="password" name="password" id="password" class="form-control border-secondary" required>
+            <div class="input-group">
+                <input type="password" name="password" id="password" class="form-control border-secondary" required>
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()" tabindex="-1">
+                    🔒
+                </button>
+            </div>
         </div>
         <button type="submit" class="btn btn-primary w-100">Entrar</button>
     </form>
 </div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+    }
+</script>
 {% endblock %}

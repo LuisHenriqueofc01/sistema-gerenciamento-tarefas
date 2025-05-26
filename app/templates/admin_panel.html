@@ -17,7 +17,7 @@
 <!-- Criar Novo Usuário -->
 <div class="bg-white p-4 shadow-sm mb-4">
     <h4 class="mb-3">CRIAR NOVO USUÁRIO</h4>
-    <form action="{{ url_for('views.create_user') }}" method="POST" class="row g-3 align-items-end">
+    <form action="{{ url_for('views.create_user') }}" method="POST" class="row g-3 align-items-end" id="form-criar-usuario">
         <div class="col-md-3">
             <label class="form-label">USUÁRIO</label>
             <input type="text" name="username" class="form-control border-secondary" required>
@@ -32,7 +32,21 @@
         </div>
         <div class="col-md-3">
             <label class="form-label">SENHA</label>
-            <input type="password" name="password" class="form-control border-secondary" required>
+            <div class="input-group">
+                <input type="password" name="password" id="senha" class="form-control border-secondary" required>
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('senha')" tabindex="-1">
+                    👁‍🗨
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">CONFIRMAR SENHA</label>
+            <div class="input-group">
+                <input type="password" id="confirmarSenha" class="form-control border-secondary" required>
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('confirmarSenha')" tabindex="-1">
+                    👁‍🗨
+                </button>
+            </div>
         </div>
         <div class="col-12 text-end">
             <button type="submit" class="btn btn-primary">Criar</button>
@@ -122,8 +136,7 @@
                 class="d-flex gap-2">
                 <select name="status" class="form-select form-select-sm border-secondary">
                     <option value="pendente" {% if task.status=='pendente' %}selected{% endif %}>Pendente</option>
-                    <option value="em progresso" {% if task.status=='em progresso' %}selected{% endif %}>Em Progresso
-                    </option>
+                    <option value="em progresso" {% if task.status=='em progresso' %}selected{% endif %}>Em Progresso</option>
                     <option value="concluída" {% if task.status=='concluída' %}selected{% endif %}>Concluída</option>
                 </select>
                 <button type="submit" class="btn btn-primary btn-sm">Atualizar</button>
@@ -138,4 +151,21 @@
     </div>
     {% endfor %}
 </div>
+
+<!-- Scripts -->
+<script>
+    function togglePassword(id) {
+        const input = document.getElementById(id);
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    document.getElementById('form-criar-usuario').addEventListener('submit', function (e) {
+        const senha = document.getElementById('senha').value;
+        const confirmar = document.getElementById('confirmarSenha').value;
+        if (senha !== confirmar) {
+            e.preventDefault();
+            alert('As senhas não coincidem. Por favor, verifique.');
+        }
+    });
+</script>
 {% endblock %}
