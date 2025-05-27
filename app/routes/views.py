@@ -309,3 +309,18 @@ def criar_modelo_processo():
 def listar_modelos_json():
     modelos = ProcessModel.query.order_by(ProcessModel.name).all()
     return jsonify([{"id": m.id, "name": m.name} for m in modelos])
+
+# ------------------------- EXCLUSÃO DE PROCESSO INICIADO -------------------------
+@views_bp.route("/process/delete/<int:processo_id>", methods=["POST"])
+@login_required
+@admin_required
+def excluir_processo(processo_id):
+    processo = ProcessInstance.query.get_or_404(processo_id)
+    try:
+        db.session.delete(processo)
+        db.session.commit()
+        flash("Processo excluído com sucesso.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao excluir processo: {str(e)}", "danger")
+    return redirect(url_for("views.iniciar_processo"))

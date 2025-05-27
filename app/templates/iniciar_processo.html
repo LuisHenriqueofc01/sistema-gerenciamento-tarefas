@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block title %}Iniciar Processo{% endblock %}
 
 {% block content %}
@@ -53,8 +52,7 @@
                         onclick="editarProcesso('{{ processo.id }}', '{{ processo.name }}', '{{ processo.end_date }}')">
                         Editar
                     </button>
-                    <form id="form-excluir-processo-{{ processo.id }}" action="/process/delete/{{ processo.id }}"
-                        method="POST" style="display: none;"></form>
+                    <form id="form-excluir-processo-{{ processo.id }}" action="{{ url_for('views.excluir_processo', processo_id=processo.id) }}" method="POST" style="display: none;"></form>
                     <button class="btn btn-danger btn-sm" onclick="confirmarExclusaoPadrao({
                         texto: 'Você deseja realmente excluir este processo?',
                         onConfirmar: () => document.getElementById('form-excluir-processo-{{ processo.id }}').submit()
