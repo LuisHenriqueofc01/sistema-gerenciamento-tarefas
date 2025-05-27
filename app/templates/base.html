@@ -63,10 +63,15 @@
                 </ul>
 
                 {% if current_user.is_authenticated %}
-                <span class="navbar-text text-white me-3">
-                    {{ current_user.name }}
-                </span>
-                <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Logout</a>
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ current_user.name }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="{{ url_for('views.change_password_page') }}">Mudar Senha</a></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                </div>
                 {% else %}
                 <a class="btn btn-outline-light btn-sm" href="{{ url_for('views.login_page') }}">Login</a>
                 {% endif %}
@@ -77,16 +82,16 @@
     <!-- MENSAGENS -->
     <div class="container-fluid px-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div id="alert-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show shadow" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
+            {% if messages %}
+                <div id="alert-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show shadow" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         {% endwith %}
     </div>
 

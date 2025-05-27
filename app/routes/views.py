@@ -32,7 +32,7 @@ def criar_modelo():
     modelos = ProcessModel.query.order_by(ProcessModel.name).all()
     return render_template("criar_modelo.html", modelos=modelos)
 
-@views_bp.route("/iniciar-processo")
+@views_bp.route("/iniciar-prosseco")
 @login_required
 def iniciar_processo():
     processos = ProcessInstance.query.order_by(ProcessInstance.created_at.desc()).all()
@@ -60,7 +60,6 @@ def kanban():
         usuario=current_user
     )
 
-
 @views_bp.route("/processo-finalizado")
 @login_required
 def processo_finalizado_pagina():
@@ -78,6 +77,27 @@ def login_page():
         return redirect(url_for("views.kanban"))
     return render_template("login.html")
 
+# ------------------------- ALTERAÇÃO DE SENHA -------------------------
+@views_bp.route("/alterar-senha", methods=["GET", "POST"])
+@login_required
+def change_password_page():
+    if request.method == "POST":
+        senha_atual = request.form.get("current_password")
+        nova_senha = request.form.get("new_password")
+        confirmar_senha = request.form.get("confirm_password")
+
+        if not current_user.check_password(senha_atual):
+            flash("Senha atual incorreta.", "danger")
+        elif nova_senha != confirmar_senha:
+            flash("Nova senha e confirmação não coincidem.", "danger")
+        else:
+            current_user.set_password(nova_senha)
+            db.session.commit()
+            flash("Senha alterada com sucesso!", "success")
+            return redirect(url_for("views.index"))
+
+    return render_template("alterar_senha.html")
+
 # ------------------------- PAINEL ADMINISTRADOR -------------------------
 @views_bp.route("/admin")
 @login_required
@@ -92,10 +112,10 @@ def admin_panel():
 @admin_required
 def create_user():
     try:
-        username = request.form["username"]
+        username = request.form["new_username"]
         name = request.form["name"]
         email = request.form["email"]
-        password = request.form["password"]
+        password = request.form["new_password"]
 
         if User.query.filter_by(username=username).first():
             flash("Já existe um usuário com esse nome de usuário.", "danger")

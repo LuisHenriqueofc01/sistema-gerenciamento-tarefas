@@ -4,7 +4,7 @@
 {% block content %}
 <div class="d-flex justify-content-center align-items-center" style="height: 80vh;">
     <form method="POST" action="{{ url_for('auth.login') }}" class="p-4 shadow bg-white rounded border border-secondary"
-        style="min-width: 300px;">
+        style="min-width: 300px;" autocomplete="on">
         <h3 class="mb-3 text-center">Login</h3>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -17,17 +17,23 @@
 
         <div class="mb-3">
             <label for="username" class="form-label">Usuário:</label>
-            <input type="text" name="username" id="username" class="form-control border-secondary" required>
+            <input type="text" name="username" id="username"
+                   class="form-control border-secondary"
+                   required autocomplete="username">
         </div>
+
         <div class="mb-3">
             <label for="password" class="form-label">Senha:</label>
             <div class="input-group">
-                <input type="password" name="password" id="password" class="form-control border-secondary" required>
+                <input type="password" name="password" id="password"
+                       class="form-control border-secondary"
+                       required autocomplete="current-password">
                 <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()" tabindex="-1">
                     🔒
                 </button>
             </div>
         </div>
+
         <button type="submit" class="btn btn-primary w-100">Entrar</button>
     </form>
 </div>

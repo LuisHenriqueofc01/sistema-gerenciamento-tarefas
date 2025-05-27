@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Alterar Senha{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <h3 class="mb-4 text-center">Alterar Senha</h3>
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">Senha Atual</label>
+            <div class="input-group">
+                <input type="password" name="current_password" id="current_password" class="form-control" required>
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('current_password')">👁‍🗨</button>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nova Senha</label>
+            <div class="input-group">
+                <input type="password" name="new_password" id="new_password" class="form-control" required>
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('new_password')">👁‍🗨</button>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Confirmar Nova Senha</label>
+            <div class="input-group">
+                <input type="password" name="confirm_password" id="confirm_password" class="form-control" required>
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('confirm_password')">👁‍🗨</button>
+            </div>
+        </div>
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function togglePassword(id) {
+        const input = document.getElementById(id);
+        input.type = input.type === "password" ? "text" : "password";
+    }
+</script>
+{% endblock %}

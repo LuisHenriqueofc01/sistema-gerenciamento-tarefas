@@ -20,7 +20,7 @@
     <form action="{{ url_for('views.create_user') }}" method="POST" class="row g-3 align-items-end" id="form-criar-usuario">
         <div class="col-md-3">
             <label class="form-label">USUÁRIO</label>
-            <input type="text" name="username" class="form-control border-secondary" required>
+            <input type="text" name="new_username" id="new_username" class="form-control border-secondary" required autocomplete="off">
         </div>
         <div class="col-md-3">
             <label class="form-label">NOME COMPLETO</label>
@@ -33,8 +33,8 @@
         <div class="col-md-3">
             <label class="form-label">SENHA</label>
             <div class="input-group">
-                <input type="password" name="password" id="senha" class="form-control border-secondary" required>
-                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('senha')" tabindex="-1">
+                <input type="password" name="new_password" id="new_password" class="form-control border-secondary" required autocomplete="new-password">
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('new_password')" tabindex="-1">
                     👁‍🗨
                 </button>
             </div>
@@ -42,8 +42,8 @@
         <div class="col-md-3">
             <label class="form-label">CONFIRMAR SENHA</label>
             <div class="input-group">
-                <input type="password" id="confirmarSenha" class="form-control border-secondary" required>
-                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('confirmarSenha')" tabindex="-1">
+                <input type="password" id="new_confirm_password" class="form-control border-secondary" required autocomplete="new-password">
+                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('new_confirm_password')" tabindex="-1">
                     👁‍🗨
                 </button>
             </div>
@@ -160,8 +160,8 @@
     }
 
     document.getElementById('form-criar-usuario').addEventListener('submit', function (e) {
-        const senha = document.getElementById('senha').value;
-        const confirmar = document.getElementById('confirmarSenha').value;
+        const senha = document.getElementById('new_password').value;
+        const confirmar = document.getElementById('new_confirm_password').value;
         if (senha !== confirmar) {
             e.preventDefault();
             alert('As senhas não coincidem. Por favor, verifique.');
