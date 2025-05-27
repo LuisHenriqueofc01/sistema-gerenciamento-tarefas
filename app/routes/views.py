@@ -41,21 +41,19 @@ def iniciar_processo():
 @login_required
 def kanban():
     if current_user.is_admin:
-        tarefas_com_processo = Task.query.filter(Task.process_id.isnot(None)).all()
-        tarefas_sem_processo = Task.query.filter(Task.process_id.is_(None)).all()
+        tarefas = Task.query.all()
     else:
-        tarefas_com_processo = Task.query.filter(
-            Task.assigned_user_id == current_user.id,
-            Task.process_id.isnot(None)
-        ).all()
-        tarefas_sem_processo = Task.query.filter(
-            Task.assigned_user_id == current_user.id,
-            Task.process_id.is_(None)
-        ).all()
+        tarefas = Task.query.filter(Task.assigned_user_id == current_user.id).all()
+
+    tarefas_pendentes = [t for t in tarefas if t.status.lower() == "pendente"]
+    tarefas_progresso = [t for t in tarefas if t.status.lower() == "em progresso"]
+    tarefas_concluidas = [t for t in tarefas if t.status.lower() == "concluída"]
 
     return render_template(
         "kanban.html",
-        tarefas=tarefas_com_processo + tarefas_sem_processo,
+        tarefas_pendentes=tarefas_pendentes,
+        tarefas_progresso=tarefas_progresso,
+        tarefas_concluidas=tarefas_concluidas,
         usuario=current_user
     )
 
@@ -178,7 +176,7 @@ def create_task():
             assigned_user_id=assigned_user_id,
             process_id=None,
             order=0,
-            status="pendente",
+            status="Pendente",
             start_date=datetime.utcnow(),
             end_date=end_date or datetime.utcnow() + timedelta(days=7)
         )
@@ -198,7 +196,7 @@ def create_task():
 @admin_required
 def update_task_status(task_id):
     task = Task.query.get_or_404(task_id)
-    task.status = request.form["status"]
+    task.status = request.form["status"].capitalize()
     db.session.commit()
     flash("Status da tarefa atualizado com sucesso.", "success")
     return redirect(url_for("views.admin_panel"))

@@ -99,7 +99,7 @@ def minhas_tarefas():
     return jsonify([{
         "id": t.id,
         "name": t.title,
-        "status": t.status,
+        "status": t.status.lower().replace(" ", "_"),
         "order": t.order,
         "process_id": t.process_id,
         "start_date": t.start_date.isoformat() if t.start_date else None,
