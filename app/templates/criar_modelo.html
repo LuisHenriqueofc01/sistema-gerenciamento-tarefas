@@ -1,216 +1,145 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+{% extends 'base.html' %}
+{% block title %}Criar Modelo de Processo{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Criar Modelo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">CRIAR MODELO DE PROCESSO</h2>
 
-    <!-- SweetAlert2 -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
-
-    <style>
-        body {
-            background-color: #F9FAFB;
-            margin: 0;
-            padding: 0;
-        }
-    </style>
-</head>
-
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Gerenciador de Tarefas Quimera</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="menuNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/kanban">Painel de tarefas</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/criar-modelo">Criar Modelo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/iniciar-processo">Iniciar Processo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/admin">Admin</a></li>
-                </ul>
-                <span class="navbar-text text-white me-3">Administrador</span>
-                <a class="btn btn-outline-light btn-sm" href="/auth/logout">Logout</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Flash Alerts -->
-    <div id="alert-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+    <div class="mb-3">
+        <input type="text" id="nomeModelo" class="form-control" placeholder="Nome do modelo">
+    </div>
+    <div class="mb-3 d-flex">
+        <input type="text" id="nomeTarefa" class="form-control me-2" placeholder="Nome da tarefa" onkeypress="if(event.key === 'Enter'){event.preventDefault(); adicionarTarefa();}">
+        <button class="btn btn-secondary" onclick="adicionarTarefa()">Adicionar tarefa</button>
     </div>
 
-    <!-- Conteúdo principal -->
-    <div class="container-fluid px-5">
-        <div class="bg-white p-5 shadow-sm">
-            <h2 class="mb-4">CRIAR MODELO DE PROCESSO</h2>
-            <form id="modelo-form">
-                <div class="mb-3">
-                    <input type="text" id="modelo-nome" class="form-control border-secondary"
-                        placeholder="Nome do modelo" required />
-                </div>
-                <div class="mb-3">
-                    <input type="text" id="tarefa-nome" class="form-control border-secondary"
-                        placeholder="Nome da tarefa" />
-                    <button type="button" class="btn btn-secondary mt-2" onclick="adicionarTarefa()">Adicionar
-                        tarefa</button>
-                </div>
-                <div id="tarefas-container" class="mb-3">
-                    <ul class="list-group"></ul>
-                </div>
-                <button type="submit" class="btn btn-success">Criar modelo</button>
-            </form>
+    <ul id="listaTarefas" class="list-group mb-3"></ul>
 
-            <div id="mensagem-modelo" class="mt-3 text-success"></div>
+    <button id="botaoCriarModelo" class="btn btn-success" onclick="salvarModelo()">Criar modelo</button>
 
-            <div class="mt-5">
-                <h5>Modelos Existentes</h5>
-                <ul class="list-group" id="lista-modelos"></ul>
-            </div>
+    <hr>
+    <h4 class="mt-4">Modelos Existentes</h4>
+    {% for modelo in modelos %}
+    <div class="d-flex justify-content-between align-items-center border p-2 rounded mb-2">
+        <strong>{{ modelo.name }}</strong>
+        <div>
+            <button class="btn btn-secondary btn-sm me-2" onclick="editarModelo({{ modelo.id }})">Editar</button>
+
+            <form id="form-excluir-modelo-{{ modelo.id }}" method="POST" action="{{ url_for('views.deletar_modelo_processo', modelo_id=modelo.id) }}" style="display: none;"></form>
+            <button class="btn btn-danger btn-sm" onclick="confirmarExclusaoModelo({{ modelo.id }}, '{{ modelo.name }}')">Excluir</button>
         </div>
     </div>
+    {% endfor %}
+</div>
 
-    <!-- Scripts -->
-    <script>
-        const tarefas = [];
+<script>
+let modeloEmEdicao = null;
 
-        function adicionarTarefa() {
-            const nomeInput = document.getElementById("tarefa-nome");
-            const nome = nomeInput.value.trim();
-            if (nome) {
-                tarefas.push({ name: nome });
-                nomeInput.value = "";
-                renderizarTarefas();
-            }
-        }
+function adicionarTarefa(nome = "") {
+    const nomeTarefa = nome || document.getElementById("nomeTarefa").value.trim();
+    if (!nomeTarefa) return;
 
-        function renderizarTarefas() {
-            const container = document.getElementById("tarefas-container").querySelector("ul");
-            container.innerHTML = "";
-            tarefas.forEach((t, i) => {
-                const item = document.createElement("li");
-                item.className = "list-group-item";
-                item.textContent = `${i + 1}. ${t.name}`;
-                container.appendChild(item);
-            });
-        }
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    li.innerHTML = `
+        <input type="text" class="form-control me-2" value="${nomeTarefa}" />
+        <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">Remover</button>
+    `;
+    document.getElementById("listaTarefas").appendChild(li);
+    document.getElementById("nomeTarefa").value = "";
+}
 
-        async function carregarModelosExistentes() {
-            try {
-                const res = await fetch("/process/models/list");
-                const modelos = await res.json();
-                const lista = document.getElementById("lista-modelos");
-                lista.innerHTML = "";
+function salvarModelo() {
+    const nome = document.getElementById("nomeModelo").value.trim();
+    const tarefas = [...document.querySelectorAll("#listaTarefas li input")].map(input => ({
+        name: input.value.trim()
+    })).filter(t => t.name !== "");
 
-                modelos.forEach(modelo => {
-                    const li = document.createElement("li");
-                    li.className = "list-group-item d-flex justify-content-between align-items-center";
-                    li.innerHTML = `
-                        <span>${modelo.name}</span>
-                        <form id="form-excluir-modelo-${modelo.id}" method="POST" action="/process/models/delete/${modelo.id}">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="confirmarExclusaoPadrao({
-                                texto: 'Deseja excluir este modelo de processo?',
-                                onConfirmar: () => document.getElementById('form-excluir-modelo-${modelo.id}').submit()
-                            })">
-                                Excluir
-                            </button>
-                        </form>`;
-                    lista.appendChild(li);
-                });
-            } catch (e) {
-                console.error("Erro ao carregar modelos:", e);
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            carregarModelosExistentes();
-
-            const form = document.getElementById("modelo-form");
-            form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-
-                if (tarefas.length === 0) {
-                    alert("Adicione pelo menos uma tarefa antes de criar o modelo.");
-                    return;
-                }
-
-                const nome = document.getElementById("modelo-nome").value;
-                const res = await fetch("/process/models", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ name: nome, tasks: tarefas })
-                });
-
-                const data = await res.json();
-                const msg = document.getElementById("mensagem-modelo");
-                msg.textContent = data.message || data.error;
-                msg.className = res.ok ? "mt-3 text-success" : "mt-3 text-danger";
-
-                if (res.ok) {
-                    tarefas.length = 0;
-                    renderizarTarefas();
-                    form.reset();
-                    carregarModelosExistentes();
-                }
-            });
+    if (!nome || tarefas.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Preencha o nome do modelo e adicione pelo menos uma tarefa.',
+            confirmButtonColor: '#ffc107'
         });
+        return;
+    }
 
-        function confirmarExclusaoPadrao({
-            titulo = "Tem certeza?",
-            texto = "Você deseja realmente excluir este item?",
-            confirmarTexto = "Sim, excluir",
-            urlRedirecionar,
-            onConfirmar
-        }) {
+    const payload = { name: nome, tasks: tarefas };
+    const url = modeloEmEdicao ? `/process/models/update/${modeloEmEdicao}` : "/process/models";
+
+    fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
             Swal.fire({
-                icon: 'warning',
-                title: titulo,
-                text: texto,
-                showCancelButton: true,
-                confirmButtonText: confirmarTexto,
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    if (onConfirmar) {
-                        onConfirmar();
-                    } else if (urlRedirecionar) {
-                        window.location.href = urlRedirecionar;
-                    }
-                }
+                icon: 'error',
+                title: 'Erro',
+                text: data.error,
+                confirmButtonColor: '#d33'
             });
+            return;
         }
-    </script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach((alert) => {
-                setTimeout(() => {
-                    const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
-                    bsAlert.close();
-                }, 4000);
+        Swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: modeloEmEdicao ? 'Modelo atualizado com sucesso.' : 'Modelo criado com sucesso.',
+            confirmButtonColor: '#198754'
+        }).then(() => window.location.reload());
+    })
+    .catch(() => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Ocorreu um problema ao salvar o modelo.',
+            confirmButtonColor: '#d33'
+        });
+    });
+}
+
+function editarModelo(id) {
+    fetch(`/process/models/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("nomeModelo").value = data.name;
+            modeloEmEdicao = data.id;
+            document.getElementById("botaoCriarModelo").innerText = "Atualizar modelo";
+
+            const lista = document.getElementById("listaTarefas");
+            lista.innerHTML = "";
+            data.tasks.forEach(tarefa => adicionarTarefa(tarefa.name));
+        })
+        .catch(() => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'Erro ao carregar o modelo.',
+                confirmButtonColor: '#d33'
             });
         });
-    </script>
-</body>
+}
 
-</html>
+function confirmarExclusaoModelo(id, nome) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Tem certeza?',
+        text: `Deseja excluir o modelo \"${nome}\"?`,
+        showCancelButton: true,
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById(`form-excluir-modelo-${id}`).submit();
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.models.models import ProcessInstance, ProcessModel, TaskTemplate, User, Task
-from werkzeug.security import generate_password_hash
 from app import db
 from functools import wraps
 from datetime import datetime, timedelta
@@ -32,7 +31,7 @@ def criar_modelo():
     modelos = ProcessModel.query.order_by(ProcessModel.name).all()
     return render_template("criar_modelo.html", modelos=modelos)
 
-@views_bp.route("/iniciar-prosseco")
+@views_bp.route("/iniciar-processo")
 @login_required
 def iniciar_processo():
     processos = ProcessInstance.query.order_by(ProcessInstance.created_at.desc()).all()
@@ -138,6 +137,11 @@ def create_user():
 @login_required
 @admin_required
 def delete_user(user_id):
+    ADMIN_PRINCIPAL_ID = 1
+    if user_id == ADMIN_PRINCIPAL_ID:
+        flash("O usuário administrador principal não pode ser excluído.", "danger")
+        return redirect(url_for("views.admin_panel"))
+
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
     db.session.commit()
@@ -219,85 +223,40 @@ def promote_user(user_id):
     flash(f"O usuário {user.username} agora é um administrador.", "success")
     return redirect(url_for("views.admin_panel"))
 
-# ------------------------- EXCLUSÃO DE TAREFAS PELO KANBAN -------------------------
-@views_bp.route("/excluir_tarefa/<int:task_id>", methods=["POST"])
-@login_required
-def excluir_tarefa(task_id):
-    task = Task.query.get_or_404(task_id)
-
-    if current_user.is_admin or task.assigned_user_id == current_user.id:
-        db.session.delete(task)
-        db.session.commit()
-        flash("Tarefa excluída com sucesso.", "success")
-    else:
-        flash("Você não tem permissão para excluir esta tarefa.", "danger")
-
-    return redirect(url_for("views.kanban"))
-
-# ------------------------- EXCLUSÃO DE PROCESSOS -------------------------
-@views_bp.route("/process/delete/<int:processo_id>", methods=["POST"])
+# ------------------------- MODELOS DE PROCESSO -------------------------
+@views_bp.route("/process/models/<int:modelo_id>", methods=["GET"])
 @login_required
 @admin_required
-def excluir_processo(processo_id):
-    processo = ProcessInstance.query.get_or_404(processo_id)
-    try:
-        db.session.delete(processo)
-        db.session.commit()
-        flash("Processo excluído com sucesso.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Erro ao excluir processo: {str(e)}", "danger")
-    return redirect(url_for("views.iniciar_processo"))
+def carregar_modelo(modelo_id):
+    modelo = ProcessModel.query.get_or_404(modelo_id)
+    tarefas = TaskTemplate.query.filter_by(model_id=modelo.id).order_by(TaskTemplate.order).all()
+    return jsonify({
+        "id": modelo.id,
+        "name": modelo.name,
+        "tasks": [{"id": t.id, "name": t.name} for t in tarefas]
+    })
 
-@views_bp.route("/processo/<int:processo_id>/tarefas")
-@login_required
-def listar_tarefas_do_processo(processo_id):
-    processo = ProcessInstance.query.get_or_404(processo_id)
-    tarefas = [{
-        "id": t.id,
-        "titulo": t.title,
-        "status": t.status,
-        "responsavel": t.assigned_user.name if t.assigned_user else "Ninguém"
-    } for t in processo.tasks]
-    return {"tarefas": tarefas}
-
-@views_bp.route("/process/update/<int:processo_id>", methods=["POST"])
+@views_bp.route("/process/models/update/<int:modelo_id>", methods=["POST"])
 @login_required
 @admin_required
-def atualizar_processo(processo_id):
-    processo = ProcessInstance.query.get_or_404(processo_id)
+def atualizar_modelo(modelo_id):
     data = request.get_json()
+    modelo = ProcessModel.query.get_or_404(modelo_id)
 
     try:
-        processo.name = data.get("name", processo.name)
-        processo.end_date = datetime.strptime(data["end_date"], "%Y-%m-%d") if data.get("end_date") else None
-        processo.responsavel_id = int(data["responsavel_id"])
+        modelo.name = data.get("name", modelo.name)
+        TaskTemplate.query.filter_by(model_id=modelo.id).delete()
+
+        for i, t in enumerate(data.get("tasks", []), start=1):
+            nova = TaskTemplate(name=t["name"], order=i, model_id=modelo.id)
+            db.session.add(nova)
+
         db.session.commit()
-        return {"message": "Processo atualizado com sucesso."}, 200
+        return jsonify({"message": "Modelo atualizado com sucesso."})
     except Exception as e:
         db.session.rollback()
-        return {"error": f"Erro ao atualizar o processo: {str(e)}"}, 400
+        return jsonify({"error": f"Erro ao atualizar modelo: {str(e)}"}), 500
 
-@views_bp.route("/processo/<int:processo_id>/atualizar-tarefas", methods=["POST"])
-@login_required
-@admin_required
-def atualizar_tarefas_do_processo(processo_id):
-    processo = ProcessInstance.query.get_or_404(processo_id)
-    data = request.get_json()
-
-    try:
-        for tdata in data.get("tarefas", []):
-            tarefa = Task.query.get(tdata["id"])
-            if tarefa and tarefa.process_id == processo.id:
-                tarefa.title = tdata["titulo"]
-                tarefa.status = tdata["status"]
-        db.session.commit()
-        return {"message": "Tarefas atualizadas com sucesso."}, 200
-    except Exception as e:
-        db.session.rollback()
-        return {"error": f"Erro ao atualizar tarefas: {str(e)}"}, 400
-
-# ------------------------- EXCLUSÃO DE MODELO -------------------------
 @views_bp.route("/process/models/delete/<int:modelo_id>", methods=["POST"])
 @login_required
 @admin_required
@@ -312,7 +271,6 @@ def deletar_modelo_processo(modelo_id):
         flash(f"Erro ao excluir modelo: {str(e)}", "danger")
     return redirect(url_for("views.criar_modelo"))
 
-# ------------------------- CRIAÇÃO DE MODELO DE PROCESSO -------------------------
 @views_bp.route("/process/models", methods=["POST"])
 @login_required
 @admin_required
@@ -345,7 +303,6 @@ def criar_modelo_processo():
         db.session.rollback()
         return jsonify({"error": f"Erro ao criar modelo: {str(e)}"}), 500
 
-# ------------------------- LISTAGEM DE MODELOS (AJAX) -------------------------
 @views_bp.route("/process/models/list")
 @login_required
 @admin_required

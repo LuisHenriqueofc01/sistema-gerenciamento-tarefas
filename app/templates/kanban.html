@@ -155,7 +155,6 @@
         </div>
     </div>
 </div>
-
 <script>
     const icones = {
         pendente: "⏳",
@@ -201,7 +200,6 @@
 
         let url = "/process/minhas-tarefas";
         const params = new URLSearchParams();
-
         if (startDate) params.append("start_date", startDate);
         if (endDate) params.append("end_date", endDate);
         url += `?${params.toString()}`;
@@ -229,7 +227,6 @@
             coluna.addEventListener("drop", async e => {
                 e.preventDefault();
                 coluna.classList.remove("drag-over");
-
                 const taskId = e.dataTransfer.getData("text/plain");
                 const novoStatus = coluna.id;
 
@@ -250,7 +247,6 @@
 
         const novasConcluidas = tarefas.filter(t => t.status === "concluída" && !concluidaTarefasCompletas.some(e => e.id === t.id));
         concluidaTarefasCompletas = concluidaTarefasCompletas.concat(novasConcluidas);
-
         renderizarConcluidasPaginadas();
     }
 
@@ -268,18 +264,18 @@
         const dataEntregaFormatada = dataEntrega ? dataEntrega.toLocaleDateString('pt-BR') : 'Sem data';
 
         div.innerHTML = `
-        <strong>${icones[t.status] || ""} ${t.name}</strong><br>
-        Responsável: ${t.assignee || "Ninguém"}<br>
-        Entrega: ${dataEntregaFormatada}<br>
-        <div class="mt-2 d-flex gap-1">
-            ${t.status === "em_progresso" ? `<button class="btn btn-sm btn-success" onclick="concluirTarefa(${t.id})">Concluir</button>` : ""}
-            <form id="form-excluir-tarefa-${t.id}" action="/excluir_tarefa/${t.id}" method="POST" style="display: none;"></form>
-            <button class="btn btn-sm btn-danger" onclick="confirmarExclusaoPadrao({
-                texto: 'Você deseja realmente excluir esta tarefa?',
-                onConfirmar: () => document.getElementById('form-excluir-tarefa-${t.id}').submit()
-            })">Excluir</button>
-        </div>
-    `;
+            <strong>${icones[t.status] || ""} ${t.name}</strong><br>
+            Responsável: ${t.assignee || "Ninguém"}<br>
+            Entrega: ${dataEntregaFormatada}<br>
+            <div class="mt-2 d-flex gap-1">
+                ${t.status === "em_progresso" ? `<button class="btn btn-sm btn-success" onclick="concluirTarefa(${t.id})">Concluir</button>` : ""}
+                <form id="form-excluir-tarefa-${t.id}" action="/excluir_tarefa/${t.id}" method="POST" style="display: none;"></form>
+                <button class="btn btn-sm btn-danger" onclick="confirmarExclusaoPadrao({
+                    texto: 'Você deseja realmente excluir esta tarefa?',
+                    onConfirmar: () => document.getElementById('form-excluir-tarefa-${t.id}').submit()
+                })">Excluir</button>
+            </div>
+        `;
 
         div.addEventListener("dragstart", e => {
             if (t.status !== "concluída") {
@@ -309,10 +305,10 @@
             const dataEntregaFormatada = dataEntrega ? dataEntrega.toLocaleDateString('pt-BR') : 'Sem data';
 
             div.innerHTML = `
-            <strong>${icones["concluída"]} ${t.name}</strong><br>
-            Responsável: ${t.assignee || "Ninguém"}<br>
-            Entrega: ${dataEntregaFormatada}<br>
-        `;
+                <strong>${icones["concluída"]} ${t.name}</strong><br>
+                Responsável: ${t.assignee || "Ninguém"}<br>
+                Entrega: ${dataEntregaFormatada}<br>
+            `;
 
             concluidaDiv.appendChild(div);
         });
@@ -327,18 +323,30 @@
     });
 
     async function concluirTarefa(taskId) {
-        if (!confirm("Tem certeza que deseja concluir esta tarefa?")) return;
+        Swal.fire({
+            icon: 'question',
+            title: 'Tem certeza?',
+            text: 'Você deseja concluir esta tarefa?',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, concluir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: true
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const res = await fetch(`/process/task/${taskId}/status`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ status: "concluída" })
+                });
 
-        const res = await fetch(`/process/task/${taskId}/status`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ status: "concluída" })
+                const data = await res.json();
+                mostrarToast(data.message || data.error, data.error ? "danger" : "success");
+                carregarTarefas(true);
+            }
         });
-
-        const data = await res.json();
-        mostrarToast(data.message || data.error, data.error ? "danger" : "success");
-        carregarTarefas(true);
     }
 </script>
 {% endblock %}
