@@ -378,7 +378,7 @@ def enviar_email_tarefa_vencida(destinatario, nome_usuario, nome_tarefa, data_ve
 
 # ------------------------- VERIFICAÇÃO E NOTIFICAÇÃO DE TAREFAS VENCIDAS -------------------------
 @views_bp.route("/notificar-tarefas")
-@admin_required  # pode deixar restrito ao admin ou remover
+@admin_required
 def notificar_tarefas_vencidas():
     hoje = datetime.utcnow()
     tarefas_vencidas = Task.query.filter(
@@ -389,7 +389,7 @@ def notificar_tarefas_vencidas():
     for tarefa in tarefas_vencidas:
         usuario = User.query.get(tarefa.assigned_user_id)
         if not usuario or usuario.is_admin:
-            continue  # pula admins e usuários inválidos
+            continue
 
         enviar_email_tarefa_vencida(
             destinatario=usuario.email,
@@ -400,4 +400,3 @@ def notificar_tarefas_vencidas():
 
     flash("Notificações de tarefas vencidas enviadas com sucesso.", "success")
     return redirect(url_for("views.kanban"))
-
