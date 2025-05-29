@@ -1,6 +1,8 @@
 # 📋 Sistema de Gerenciamento de Tarefas
 
-Sistema web desenvolvido em Flask com foco na criação e gerenciamento de processos e tarefas. A interface inclui um painel Kanban dinâmico, modelo de processos reutilizáveis, sistema de autenticação de usuários e funcionalidades administrativas.
+Sistema web desenvolvido em Flask com foco na criação e gerenciamento de processos e tarefas. A interface inclui um painel Kanban dinâmico, modelos de processos reutilizáveis, sistema de autenticação de usuários e funcionalidades administrativas para controle completo das tarefas da equipe.
+
+---
 
 ## 🛠 Tecnologias Utilizadas
 
@@ -9,66 +11,67 @@ Sistema web desenvolvido em Flask com foco na criação e gerenciamento de proce
 - SQLite  
 - SQLAlchemy  
 - Flask-Login  
+- Flask-Migrate  
+- Flask-Mail  
 - Bootstrap 5  
 - JavaScript (Fetch API, DOM)  
 - HTML5 e Jinja2  
 
+---
+
 ## 📌 Funcionalidades
 
 - ✅ **Autenticação de usuários** (login, logout, alteração de senha)  
-- 🧑‍💼 **Painel de administrador** (criação de usuários)  
-- 📁 **Criação de modelos de processo** com múltiplas tarefas  
-- ⚙️ **Instanciação de processos** a partir de modelos  
-- 📌 **Kanban com tarefas em andamento, concluídas e pendentes**  
-- 🔔 **Notificações automáticas de tarefas vencidas**  
-- 🗓 **Datas de início e fim para tarefas e processos**  
-- 📉 **Tarefas concluídas somem após o mês vigente**  
-- 🚨 **Tarefas atrasadas em destaque**
-
-## 📷 Interface
-
-> Você pode inserir imagens da interface no diretório `static/assets/` e referenciar aqui com `![descrição](caminho)`.
-
-## 🧭 Estrutura de Pastas
+- 🧑‍💼 **Painel administrativo** (criação de usuários e visualização global)  
+- 📁 **Criação e edição de modelos de processo** com múltiplas tarefas  
+- ⚙️ **Instanciação de processos reais** a partir de modelos  
+- 📌 **Kanban dinâmico** com status: pendente, em andamento e concluído  
+- 🗓 **Datas de início e fim** para tarefas e processos  
+- 🔔 **Notificações automáticas** de tarefas vencidas por e-mail e popup  
+- 📉 **Ocultação automática de tarefas concluídas após o mês vigente**  
+- 🚨 **Destaque visual** para tarefas atrasadas  
+- 🔐 **Controle de permissões** com diferenciação entre usuário comum e admin  
 
 sistema-gerenciamento-tarefas/
 ├── app/
-│ ├── static/
-│ ├── templates/
-│ ├── models/
-│ ├── routes/
-│ ├── init.py
-│ └── ...
+│   ├── static/
+│   ├── templates/
+│   ├── models/
+│   ├── routes/
+│   └── __init__.py
 ├── migrations/
-├── venv/
+├── instance/
+│   └── app.db
+├── agendador.py
 ├── config.py
 ├── requirements.txt
-└── run.py
+├── run.py
+└── .env (não versionado)
 
-## ▶️ Como Executar Localmente
-1. Clone o repositório:
+Como executar localmente:
+
 git clone https://github.com/LuisHenriqueofc01/sistema-gerenciamento-tarefas.git
 cd sistema-gerenciamento-tarefas
 
-2. Crie e ative um ambiente virtual:
 python -m venv venv
-source venv/bin/activate  # ou venv\Scripts\activate no Windows
+venv\Scripts\activate  # Windows
+# ou
+source venv/bin/activate  # Linux/macOS
 
-3. Instale as dependências:
 pip install -r requirements.txt
 
-4. Inicialize o banco de dados:
 flask db init
 flask db migrate
 flask db upgrade
 
-5. Execute a aplicação:
 python run.py
-
 Acesse: http://localhost:5000
 
-👥 Equipe do Projeto
+👥 Equipe do Projeto:
 
 Gabriel – Gerente Geral
+
 Luis – Desenvolvedor Back-end
+
 Eduardo – Desenvolvedor Front-end
+
