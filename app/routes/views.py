@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.models.models import ProcessInstance, ProcessModel, TaskTemplate, User, Task
-from app import db
+from app import db, mail  # já aproveita para importar o mail aqui
+from flask_mail import Message
 from functools import wraps
 from datetime import datetime, timedelta
 
@@ -356,5 +357,47 @@ def tarefas_vencidas():
         query = query.filter(Task.assigned_user_id == current_user.id)
 
     tarefas = query.all()
-
     return jsonify({"vencidas": [t.id for t in tarefas]})
+
+
+# ------------------------- FUNÇÃO DE ENVIO DE NOTIFICAÇÃO POR EMAIL -------------------------
+def enviar_email_tarefa_vencida(destinatario, nome_usuario, nome_tarefa, data_vencimento):
+    msg = Message(
+        subject="Tarefa Vencida",
+        sender="seuemail@gmail.com",  # troque pelo seu
+        recipients=[destinatario]
+    )
+    msg.body = (
+        f"Olá, {nome_usuario}!\n\n"
+        f"A tarefa '{nome_tarefa}' venceu no dia {data_vencimento.strftime('%d/%m/%Y')}.\n"
+        "Acesse o sistema para atualizá-la ou concluí-la o quanto antes.\n\n"
+        "Atenciosamente,\nSistema de Gerenciamento de Tarefas"
+    )
+    mail.send(msg)
+
+
+# ------------------------- VERIFICAÇÃO E NOTIFICAÇÃO DE TAREFAS VENCIDAS -------------------------
+@views_bp.route("/notificar-tarefas")
+@admin_required  # pode deixar restrito ao admin ou remover
+def notificar_tarefas_vencidas():
+    hoje = datetime.utcnow()
+    tarefas_vencidas = Task.query.filter(
+        Task.status != "Concluída",
+        Task.end_date < hoje
+    ).all()
+
+    for tarefa in tarefas_vencidas:
+        usuario = User.query.get(tarefa.assigned_user_id)
+        if not usuario or usuario.is_admin:
+            continue  # pula admins e usuários inválidos
+
+        enviar_email_tarefa_vencida(
+            destinatario=usuario.email,
+            nome_usuario=usuario.name,
+            nome_tarefa=tarefa.name,
+            data_vencimento=tarefa.end_date
+        )
+
+    flash("Notificações de tarefas vencidas enviadas com sucesso.", "success")
+    return redirect(url_for("views.kanban"))
+

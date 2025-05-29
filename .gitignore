@@ -16,3 +16,6 @@ env/
 .DS_Store
 *.swp
 Thumbs.db
+
+# Variáveis de ambiente (NUNCA versionar senhas e tokens)
+.env
