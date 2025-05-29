@@ -57,6 +57,25 @@ def kanban():
         usuario=current_user
     )
 
+@views_bp.route("/excluir_tarefa/<int:task_id>", methods=["POST"])
+@login_required
+def excluir_tarefa(task_id):
+    tarefa = Task.query.get_or_404(task_id)
+
+    if not current_user.is_admin and tarefa.assigned_user_id != current_user.id:
+        flash("Você não tem permissão para excluir esta tarefa.", "danger")
+        return redirect(url_for("views.kanban"))
+
+    try:
+        db.session.delete(tarefa)
+        db.session.commit()
+        flash("Tarefa excluída com sucesso.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao excluir tarefa: {str(e)}", "danger")
+
+    return redirect(url_for("views.kanban"))
+
 @views_bp.route("/processo-finalizado")
 @login_required
 def processo_finalizado_pagina():
