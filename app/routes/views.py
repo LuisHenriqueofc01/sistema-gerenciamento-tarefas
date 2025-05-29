@@ -341,3 +341,22 @@ def excluir_processo(processo_id):
         db.session.rollback()
         flash(f"Erro ao excluir processo: {str(e)}", "danger")
     return redirect(url_for("views.iniciar_processo"))
+
+# ------------------------- NOTIFICAÇÕES DE TAREFAS VENCIDAS -------------------------
+@views_bp.route("/tarefas-vencidas")
+@login_required
+def tarefas_vencidas():
+    hoje = datetime.utcnow()
+    if current_user.is_admin:
+        tarefas = Task.query.filter(
+            Task.status != "Concluída",
+            Task.end_date < hoje
+        ).all()
+    else:
+        tarefas = Task.query.filter(
+            Task.status != "Concluída",
+            Task.end_date < hoje,
+            Task.assigned_user_id == current_user.id
+        ).all()
+
+    return jsonify({"vencidas": [t.id for t in tarefas]})
