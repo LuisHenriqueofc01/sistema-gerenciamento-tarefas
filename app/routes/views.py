@@ -347,16 +347,14 @@ def excluir_processo(processo_id):
 @login_required
 def tarefas_vencidas():
     hoje = datetime.utcnow()
-    if current_user.is_admin:
-        tarefas = Task.query.filter(
-            Task.status != "Concluída",
-            Task.end_date < hoje
-        ).all()
-    else:
-        tarefas = Task.query.filter(
-            Task.status != "Concluída",
-            Task.end_date < hoje,
-            Task.assigned_user_id == current_user.id
-        ).all()
+    query = Task.query.filter(
+        Task.status != "Concluída",
+        Task.end_date < hoje
+    )
+
+    if not current_user.is_admin:
+        query = query.filter(Task.assigned_user_id == current_user.id)
+
+    tarefas = query.all()
 
     return jsonify({"vencidas": [t.id for t in tarefas]})

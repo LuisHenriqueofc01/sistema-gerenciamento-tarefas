@@ -178,13 +178,27 @@
         });
 
         function abrirNotificacoes() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Tarefas Vencidas',
-                html: 'Você possui tarefas vencidas. <a href="/kanban">Ver agora</a>',
-                confirmButtonText: 'Fechar'
-            });
-        }
+    fetch("/tarefas-vencidas")
+        .then(res => res.json())
+        .then(data => {
+            if (data.vencidas && data.vencidas.length > 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Tarefas Vencidas',
+                    html: 'Você possui tarefas vencidas. <a href="/kanban">Ver agora</a>',
+                    confirmButtonText: 'Fechar'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Tudo certo!',
+                    text: 'Você não possui tarefas vencidas.',
+                    confirmButtonText: 'Fechar'
+                });
+            }
+        });
+}
+
     </script>
 </body>
 
