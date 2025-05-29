@@ -12,18 +12,18 @@
 {% endif %}
 {% endwith %}
 
-<h2 class="mb-4">PAINEL DOS ADMINISTRADORES</h2>
+<h2 class="mb-4">Painel Administrador</h2>
 
 <!-- Criar Novo Usuário -->
 <div class="bg-white p-4 shadow-sm mb-4">
-    <h4 class="mb-3">CRIAR NOVO USUÁRIO</h4>
+    <h4 class="mb-3">Criar novo Usuário</h4>
     <form action="{{ url_for('views.create_user') }}" method="POST" class="row g-3 align-items-end" id="form-criar-usuario">
         <div class="col-md-3">
-            <label class="form-label">USUÁRIO</label>
+            <label class="form-label">Usuário</label>
             <input type="text" name="new_username" id="new_username" class="form-control border-secondary" required autocomplete="off">
         </div>
         <div class="col-md-3">
-            <label class="form-label">NOME COMPLETO</label>
+            <label class="form-label">Nome completo</label>
             <input type="text" name="name" class="form-control border-secondary" required>
         </div>
         <div class="col-md-3">
@@ -31,7 +31,7 @@
             <input type="email" name="email" class="form-control border-secondary" required>
         </div>
         <div class="col-md-3">
-            <label class="form-label">SENHA</label>
+            <label class="form-label">Senha</label>
             <div class="input-group">
                 <input type="password" name="new_password" id="new_password" class="form-control border-secondary" required autocomplete="new-password">
                 <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('new_password')" tabindex="-1">
@@ -40,7 +40,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <label class="form-label">CONFIRMAR SENHA</label>
+            <label class="form-label">Confirmar senha</label>
             <div class="input-group">
                 <input type="password" id="new_confirm_password" class="form-control border-secondary" required autocomplete="new-password">
                 <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('new_confirm_password')" tabindex="-1">
@@ -56,7 +56,7 @@
 
 <!-- Lista de Administradores -->
 <div class="mb-4">
-    <h4>ADMINISTRADORES</h4>
+    <h4>Administradores</h4>
     {% for user in users if user.is_admin %}
     <div class="d-flex justify-content-between align-items-center bg-info bg-opacity-25 p-3 rounded mb-2">
         <span>{{ user.username }} - {{ user.name }} (admin)</span>
@@ -72,7 +72,7 @@
 
 <!-- Lista de Usuários Comuns -->
 <div class="mb-4">
-    <h4>USUÁRIOS</h4>
+    <h4>Usuários</h4>
     {% for user in users if not user.is_admin %}
     <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm mb-2">
         <span>{{ user.username }} - {{ user.name }}</span>
@@ -93,27 +93,27 @@
 
 <!-- Criar Tarefa para Usuário -->
 <div class="bg-white p-4 shadow-sm mb-4">
-    <h4 class="mb-3">CRIAR TAREFA PARA USUÁRIO</h4>
+    <h4 class="mb-3">Criar tarefa para usuário</h4>
     <form action="{{ url_for('views.create_task') }}" method="POST" class="row g-3 align-items-end">
         <div class="col-md-3">
-            <label class="form-label">TÍTULO</label>
+            <label class="form-label">Título</label>
             <input type="text" name="title" class="form-control border-secondary" required>
         </div>
         <div class="col-md-3">
-            <label class="form-label">DESCRIÇÃO</label>
+            <label class="form-label">Descrição</label>
             <input type="text" name="description" class="form-control border-secondary" required>
         </div>
         <div class="col-md-2">
-            <label class="form-label">USUÁRIO</label>
+            <label class="form-label">Usuário</label>
             <select name="user_id" class="form-select border-secondary" required>
-                <option value="" disabled selected>SELECIONE UM USUÁRIO</option>
+                <option value="" disabled selected>Selecione um usuário</option>
                 {% for user in users %}
                 <option value="{{ user.id }}">{{ user.username }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label">DATA DE ENTREGA</label>
+            <label class="form-label">Data de entrega</label>
             <input type="date" name="end_date" class="form-control border-secondary">
         </div>
         <div class="col-md-2 text-end">
@@ -124,7 +124,7 @@
 
 <!-- Lista de Tarefas -->
 <div>
-    <h4 class="mb-3">LISTA DE TAREFAS</h4>
+    <h4 class="mb-3">Lista de Tarefas</h4>
     {% for task in tasks %}
     <div class="d-flex justify-content-between align-items-center bg-warning bg-opacity-25 p-3 rounded mb-2">
         <span>
